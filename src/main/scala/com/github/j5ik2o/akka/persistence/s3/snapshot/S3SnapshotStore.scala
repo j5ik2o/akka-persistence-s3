@@ -9,38 +9,47 @@ import akka.persistence.{
   SnapshotSelectionCriteria
 }
 import akka.serialization.SerializationExtension
+import com.github.j5ik2o.akka.persistence.s3.config.S3ClientConfig
 import com.github.j5ik2o.akka.persistence.s3.resolver.{
   BucketNameResolver,
   KeyResolver
 }
-import com.github.j5ik2o.akka.persistence.s3.utils.ClassUtil
+import com.github.j5ik2o.akka.persistence.s3.utils.{
+  ClassUtil,
+  HttpClientBuilderUtils,
+  S3ClientBuilderUtils
+}
 import com.github.j5ik2o.reactive.aws.s3.S3AsyncClient
 import com.typesafe.config.Config
+import net.ceedubs.ficus.Ficus._
+import software.amazon.awssdk.core.async.{
+  AsyncRequestBody,
+  AsyncResponseTransformer
+}
 import software.amazon.awssdk.services.s3.model.{
   DeleteObjectRequest,
   GetObjectRequest,
   ListObjectsRequest,
   PutObjectRequest
 }
-import software.amazon.awssdk.services.s3.{S3AsyncClient => JavaS3AsyncClient}
-import com.github.j5ik2o.reactive.aws.s3.implicits._
-import net.ceedubs.ficus.Ficus._
-import net.ceedubs.ficus.readers.ArbitraryTypeReader._
-import software.amazon.awssdk.core.async.{
-  AsyncRequestBody,
-  AsyncResponseTransformer
-}
 
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.util.control.NonFatal
 import scala.jdk.CollectionConverters._
+import scala.util.control.NonFatal
 
 class S3SnapshotStore(config: Config) extends SnapshotStore {
   implicit val system: ActorSystem = context.system
   import system.dispatcher
-  private val javaS3Client = JavaS3AsyncClient.builder().build()
-  private val s3AsyncClient = S3AsyncClient(javaS3Client)
+
+  private val s3ClientConfig: S3ClientConfig =
+    S3ClientConfig.fromConfig(config.getConfig("s3-client"))
+
+  private val httpClientBuilder = HttpClientBuilderUtils.setup(s3ClientConfig)
+  private val javaS3ClientBuilder =
+    S3ClientBuilderUtils.setup(s3ClientConfig, httpClientBuilder.build())
+
+  private val s3AsyncClient = S3AsyncClient(javaS3ClientBuilder.build())
   private val serialization = SerializationExtension(system)
 
   protected val bucketNameResolver: BucketNameResolver =
@@ -152,7 +161,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
 
   private def serialize(snapshot: Snapshot): (Array[Byte], Int) = {
     val result = serialization.findSerializerFor(snapshot).toBinary(snapshot)
-    (result, result.size)
+    (result, result.length)
   }
 
   override def deleteAsync(metadata: SnapshotMetadata): Future[Unit] = {
