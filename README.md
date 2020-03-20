@@ -27,3 +27,23 @@ libraryDependencies += Seq(
   "com.github.j5ik2o" %% "akka-persistence-s3" % version
 )
 ```
+
+## Configration
+
+The minimum necessary settings are as follows.
+
+```
+j5ik2o {
+  s3-snapshot-store {
+    bucket-name-resolver-class-name = "com.github.j5ik2o.akka.persistence.s3.resolver.BucketNameResolver$PersistenceId"
+    key-resolver-class-name = "com.github.j5ik2o.akka.persistence.s3.resolver.KeyResolver$PersistenceId"
+    s3-client {
+      path-style-access-enabled = true
+      # Set the following as needed
+      access-key-id = ""
+      secret-access-key = ""
+      endpoint = ""
+    }
+  }
+}
+```
