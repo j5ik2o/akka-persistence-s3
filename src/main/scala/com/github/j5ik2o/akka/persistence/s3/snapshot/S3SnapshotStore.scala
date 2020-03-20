@@ -79,6 +79,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
   override def saveAsync(metadata: SnapshotMetadata,
                          snapshot: Any): Future[Unit] = {
     val (byteArray, size) = serialize(Snapshot(snapshot))
+    log.info(s"saveAsync:metadata = ${metadata}")
     log.info("saveAsync:byteArray.size = {}", byteArray.size)
     log.info("saveAsync:size = {}", size)
     val putObjectRequest = PutObjectRequest
