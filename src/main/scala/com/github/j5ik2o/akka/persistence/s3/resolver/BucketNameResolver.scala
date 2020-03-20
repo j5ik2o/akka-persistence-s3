@@ -10,7 +10,7 @@ object BucketNameResolver {
 
   class PersistenceId extends BucketNameResolver {
     override def resolve(persistenceId: String): String =
-      "akka-persistence-s3"
+      "j5ik2o.akka-persistence-s3"
   }
 
 }

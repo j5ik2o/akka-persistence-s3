@@ -76,30 +76,11 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       .map(_.sorted.takeRight(maxLoadAttempts))
       .flatMap(load)
 
-  private def load(
-    metadata: immutable.Seq[SnapshotMetadata]
-  ): Future[Option[SelectedSnapshot]] = metadata.lastOption match {
-    case None => Future.successful(None)
-    case Some(md) =>
-      val request = GetObjectRequest
-        .builder()
-        .bucket(bucketNameResolver.resolve(md.persistenceId))
-        .key(keyResolver.resolve(md))
-        .build()
-      s3AsyncClient
-        .getObject(request, AsyncResponseTransformer.toBytes())
-        .map { response =>
-          val snapshot = deserialize(response.asByteArray())
-          Some(SelectedSnapshot(md, snapshot.data))
-        } recoverWith {
-        case NonFatal(e) =>
-          log.error(e, s"Error loading snapshot [${md}]")
-          load(metadata.init) // try older snapshot
-      }
-  }
   override def saveAsync(metadata: SnapshotMetadata,
                          snapshot: Any): Future[Unit] = {
     val (byteArray, size) = serialize(Snapshot(snapshot))
+    log.info("saveAsync:byteArray.size = {}", byteArray.size)
+    log.info("saveAsync:size = {}", size)
     val putObjectRequest = PutObjectRequest
       .builder()
       .contentLength(size.toLong)
@@ -109,59 +90,17 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     s3AsyncClient
       .putObject(putObjectRequest, AsyncRequestBody.fromBytes(byteArray))
       .flatMap { response =>
+        val sdkHttpResponse = response.sdkHttpResponse
+        log.info(s"saveAsync:response = $response")
         if (response.sdkHttpResponse().isSuccessful)
           Future.successful(())
         else
-          Future.failed(new Exception())
-      }
-  }
-  def prefixFromPersistenceId(persisitenceId: String): String =
-    s"$persisitenceId/"
-
-  private def snapshotMetadatas(
-    persistenceId: String,
-    criteria: SnapshotSelectionCriteria
-  ): Future[List[SnapshotMetadata]] = {
-    val request =
-      ListObjectsRequest
-        .builder()
-        .bucket(bucketNameResolver.resolve(persistenceId))
-        .prefix(prefixFromPersistenceId(persistenceId))
-        .delimiter("/")
-        .build()
-    s3AsyncClient
-      .listObjects(request)
-      .flatMap { response =>
-        if (response.sdkHttpResponse().isSuccessful)
-          Future.successful(
-            response
-              .contents()
-              .asScala
-              .toList
-              .map { s =>
-                keyResolver.parse(s.key())
-              }
-              .filter { m =>
-                m.sequenceNr >= criteria.minSequenceNr &&
-                m.sequenceNr <= criteria.maxSequenceNr &&
-                m.timestamp >= criteria.minTimestamp &&
-                m.timestamp <= criteria.maxTimestamp
-              }
+          Future.failed(
+            new S3SnapshotException(
+              s"Failed to PutObjectRequest: statusCode = ${sdkHttpResponse.statusCode()}"
+            )
           )
-        else
-          Future.failed(new Exception)
       }
-
-  }
-
-  protected def deserialize(bytes: Array[Byte]): Snapshot =
-    serialization
-      .deserialize(bytes, classOf[Snapshot])
-      .get
-
-  private def serialize(snapshot: Snapshot): (Array[Byte], Int) = {
-    val result = serialization.findSerializerFor(snapshot).toBinary(snapshot)
-    (result, result.length)
   }
 
   override def deleteAsync(metadata: SnapshotMetadata): Future[Unit] = {
@@ -182,10 +121,15 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
         .key(keyResolver.resolve(metadata))
         .build()
       s3AsyncClient.deleteObject(request).flatMap { response =>
+        val sdkHttpResponse = response.sdkHttpResponse
         if (response.sdkHttpResponse().isSuccessful)
           Future.successful(())
         else
-          Future.failed(new Exception())
+          Future.failed(
+            new S3SnapshotException(
+              s"Failed to DeleteObjectRequest: statusCode = ${sdkHttpResponse.statusCode()}"
+            )
+          )
       }
     }
   }
@@ -196,6 +140,93 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
   ): Future[Unit] = {
     val metadatas = snapshotMetadatas(persistenceId, criteria)
     metadatas.map(list => Future.sequence(list.map(deleteAsync)))
+  }
+
+  private def load(
+    metadata: immutable.Seq[SnapshotMetadata]
+  ): Future[Option[SelectedSnapshot]] = metadata.lastOption match {
+    case None => Future.successful(None)
+    case Some(md) =>
+      val request = GetObjectRequest
+        .builder()
+        .bucket(bucketNameResolver.resolve(md.persistenceId))
+        .key(keyResolver.resolve(md))
+        .build()
+      s3AsyncClient
+        .getObject(request, AsyncResponseTransformer.toBytes())
+        .map { responseBytes =>
+          if (responseBytes.response().sdkHttpResponse().isSuccessful) {
+            log.info(s"load:response = ${responseBytes.response()}")
+            log.info(s"load:responseBytes = $responseBytes")
+            log.info(
+              s"load:responseBytes.length = ${responseBytes.asByteArray().length}"
+            )
+            val snapshot = deserialize(responseBytes.asByteArray())
+            Some(SelectedSnapshot(md, snapshot.data))
+          } else {
+            log.warning("load: result = None")
+            None
+          }
+        } recoverWith {
+        case NonFatal(e) =>
+          log.error(e, s"Error loading snapshot [${md}]")
+          load(metadata.init) // try older snapshot
+      }
+  }
+
+  private def snapshotMetadatas(
+    persistenceId: String,
+    criteria: SnapshotSelectionCriteria
+  ): Future[List[SnapshotMetadata]] = {
+    val request =
+      ListObjectsRequest
+        .builder()
+        .bucket(bucketNameResolver.resolve(persistenceId))
+        .prefix(prefixFromPersistenceId(persistenceId))
+        .delimiter("/")
+        .build()
+    s3AsyncClient
+      .listObjects(request)
+      .flatMap { response =>
+        val sdkHttpResponse = response.sdkHttpResponse
+        if (sdkHttpResponse.isSuccessful)
+          Future.successful(
+            response
+              .contents()
+              .asScala
+              .toList
+              .map { s =>
+                keyResolver.parse(s.key())
+              }
+              .filter { m =>
+                m.sequenceNr >= criteria.minSequenceNr &&
+                m.sequenceNr <= criteria.maxSequenceNr &&
+                m.timestamp >= criteria.minTimestamp &&
+                m.timestamp <= criteria.maxTimestamp
+              }
+          )
+        else
+          Future.failed(
+            new S3SnapshotException(
+              s"Failed to ListObjectsRequest: statusCode = ${sdkHttpResponse.statusCode()}"
+            )
+          )
+      }
+
+  }
+
+  def prefixFromPersistenceId(persisitenceId: String): String =
+    s"$persisitenceId/"
+
+  protected def deserialize(bytes: Array[Byte]): Snapshot =
+    serialization
+      .deserialize(bytes, classOf[Snapshot])
+      .get
+
+  private def serialize(snapshot: Snapshot): (Array[Byte], Int) = {
+    val serialized =
+      serialization.findSerializerFor(snapshot).toBinary(snapshot)
+    (serialized, serialized.length)
   }
 
 }
