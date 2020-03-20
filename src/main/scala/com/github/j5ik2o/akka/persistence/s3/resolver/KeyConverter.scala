@@ -2,22 +2,24 @@ package com.github.j5ik2o.akka.persistence.s3.resolver
 
 import akka.persistence.SnapshotMetadata
 
-trait KeyResolver {
+trait KeyConverter {
 
-  def resolve(snapshotMetadata: SnapshotMetadata): String
-  def parse(key: String): SnapshotMetadata
+  def convertTo(snapshotMetadata: SnapshotMetadata): Key
+
+  def convertFrom(key: Key): SnapshotMetadata
+
 }
 
-object KeyResolver {
+object KeyConverter {
   val extensionName = "snapshot"
 
   lazy val Pattern = ("""^(.+)/(\d+)-(\d+)\.""" + extensionName + "$").r
 
-  class PersistenceId extends KeyResolver {
-    override def resolve(snapshotMetadata: SnapshotMetadata): String =
+  class PersistenceId extends KeyConverter {
+    override def convertTo(snapshotMetadata: SnapshotMetadata): Key =
       s"${snapshotMetadata.persistenceId}/${snapshotMetadata.sequenceNr.toString.reverse}-${snapshotMetadata.timestamp}.$extensionName"
 
-    override def parse(key: String): SnapshotMetadata = key match {
+    override def convertFrom(key: Key): SnapshotMetadata = key match {
       case Pattern(
           persistenceId: String,
           sequenceNr: String,

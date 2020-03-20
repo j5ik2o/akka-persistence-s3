@@ -12,7 +12,7 @@ import akka.serialization.SerializationExtension
 import com.github.j5ik2o.akka.persistence.s3.config.S3ClientConfig
 import com.github.j5ik2o.akka.persistence.s3.resolver.{
   BucketNameResolver,
-  KeyResolver
+  KeyConverter
 }
 import com.github.j5ik2o.akka.persistence.s3.utils.{
   ClassUtil,
@@ -59,11 +59,11 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
         .as[String]("bucket-name-resolver-class-name")
     )
 
-  protected val keyResolver: KeyResolver =
+  protected val keyConverter: KeyConverter =
     ClassUtil.create(
-      classOf[KeyResolver],
+      classOf[KeyConverter],
       config
-        .as[String]("key-resolver-class-name")
+        .as[String]("key-converter-class-name")
     )
 
   val maxLoadAttempts = 1
@@ -86,7 +86,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       .builder()
       .contentLength(size.toLong)
       .bucket(bucketNameResolver.resolve(metadata.persistenceId))
-      .key(keyResolver.resolve(metadata))
+      .key(keyConverter.convertTo(metadata))
       .build()
     s3AsyncClient
       .putObject(putObjectRequest, AsyncRequestBody.fromBytes(byteArray))
@@ -119,7 +119,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       val request = DeleteObjectRequest
         .builder()
         .bucket(bucketNameResolver.resolve(metadata.persistenceId))
-        .key(keyResolver.resolve(metadata))
+        .key(keyConverter.convertTo(metadata))
         .build()
       s3AsyncClient.deleteObject(request).flatMap { response =>
         val sdkHttpResponse = response.sdkHttpResponse
@@ -151,7 +151,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       val request = GetObjectRequest
         .builder()
         .bucket(bucketNameResolver.resolve(md.persistenceId))
-        .key(keyResolver.resolve(md))
+        .key(keyConverter.convertTo(md))
         .build()
       s3AsyncClient
         .getObject(request, AsyncResponseTransformer.toBytes())
@@ -197,7 +197,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
               .asScala
               .toList
               .map { s =>
-                keyResolver.parse(s.key())
+                keyConverter.convertFrom(s.key())
               }
               .filter { m =>
                 m.sequenceNr >= criteria.minSequenceNr &&

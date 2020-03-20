@@ -32,7 +32,7 @@ import scala.concurrent.{ExecutionContext, Future}
 case class TCPPortReadyChecker(port: Int,
                                host: Option[String] = None,
                                duration: Duration =
-                                 Duration(500, TimeUnit.MILLISECONDS))
+                                 Duration(1, TimeUnit.SECONDS))
     extends DockerReadyChecker {
   override def apply(container: DockerContainerState)(
     implicit docker: DockerCommandExecutor,

@@ -36,7 +36,7 @@ The minimum necessary settings are as follows.
 j5ik2o {
   s3-snapshot-store {
     bucket-name-resolver-class-name = "com.github.j5ik2o.akka.persistence.s3.resolver.BucketNameResolver$PersistenceId"
-    key-resolver-class-name = "com.github.j5ik2o.akka.persistence.s3.resolver.KeyResolver$PersistenceId"
+    key-converter-class-name = "com.github.j5ik2o.akka.persistence.s3.resolver.KeyConverter$PersistenceId"
     s3-client {
       # Set the following as needed
       access-key-id = ""
