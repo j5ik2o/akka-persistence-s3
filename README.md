@@ -38,11 +38,13 @@ j5ik2o {
     bucket-name-resolver-class-name = "com.github.j5ik2o.akka.persistence.s3.resolver.BucketNameResolver$PersistenceId"
     key-resolver-class-name = "com.github.j5ik2o.akka.persistence.s3.resolver.KeyResolver$PersistenceId"
     s3-client {
-      path-style-access-enabled = true
       # Set the following as needed
       access-key-id = ""
       secret-access-key = ""
       endpoint = ""
+      s3-options {
+        path-style-access-enabled = true
+      }
     }
   }
 }
