@@ -54,6 +54,8 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
   private val s3AsyncClient = S3AsyncClient(javaS3ClientBuilder.build())
   private val serialization = SerializationExtension(system)
 
+  private val extensionName = config.as[String]("extension-name")
+
   protected val bucketNameResolver: BucketNameResolver =
     ClassUtil.create(
       classOf[BucketNameResolver],
@@ -98,7 +100,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       .builder()
       .contentLength(size.toLong)
       .bucket(bucketNameResolver.resolve(snapshotMetadata.persistenceId))
-      .key(keyConverter.convertTo(snapshotMetadata))
+      .key(keyConverter.convertTo(snapshotMetadata, extensionName))
       .build()
     s3AsyncClient
       .putObject(putObjectRequest, AsyncRequestBody.fromBytes(byteArray))
@@ -131,7 +133,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       val request = DeleteObjectRequest
         .builder()
         .bucket(bucketNameResolver.resolve(snapshotMetadata.persistenceId))
-        .key(keyConverter.convertTo(snapshotMetadata))
+        .key(keyConverter.convertTo(snapshotMetadata, extensionName))
         .build()
       s3AsyncClient.deleteObject(request).flatMap { response =>
         val sdkHttpResponse = response.sdkHttpResponse
@@ -163,7 +165,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       val request = GetObjectRequest
         .builder()
         .bucket(bucketNameResolver.resolve(snapshotMetadata.persistenceId))
-        .key(keyConverter.convertTo(snapshotMetadata))
+        .key(keyConverter.convertTo(snapshotMetadata, extensionName))
         .build()
       s3AsyncClient
         .getObject(request, AsyncResponseTransformer.toBytes())
@@ -209,7 +211,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
               .asScala
               .toList
               .map { s =>
-                keyConverter.convertFrom(s.key())
+                keyConverter.convertFrom(s.key(), extensionName)
               }
               .filter { snapshotMetadata =>
                 snapshotMetadata.sequenceNr >= criteria.minSequenceNr &&
