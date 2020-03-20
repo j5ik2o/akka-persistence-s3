@@ -12,7 +12,9 @@ import akka.serialization.SerializationExtension
 import com.github.j5ik2o.akka.persistence.s3.config.S3ClientConfig
 import com.github.j5ik2o.akka.persistence.s3.resolver.{
   BucketNameResolver,
-  KeyConverter
+  KeyConverter,
+  PathPrefixResolver,
+  PersistenceId
 }
 import com.github.j5ik2o.akka.persistence.s3.utils.{
   ClassUtil,
@@ -66,6 +68,16 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
         .as[String]("key-converter-class-name")
     )
 
+  protected val pathPrefixResolver: PathPrefixResolver = ClassUtil.create(
+    classOf[PathPrefixResolver],
+    config.as[String]("path-prefix-resolver-class-name")
+  )
+
+  private def prefixFromPersistenceId(
+    persistenceId: PersistenceId
+  ): Option[String] =
+    pathPrefixResolver.resolve(persistenceId)
+
   val maxLoadAttempts = 1
 
   override def loadAsync(
@@ -76,17 +88,17 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       .map(_.sorted.takeRight(maxLoadAttempts))
       .flatMap(load)
 
-  override def saveAsync(metadata: SnapshotMetadata,
+  override def saveAsync(snapshotMetadata: SnapshotMetadata,
                          snapshot: Any): Future[Unit] = {
     val (byteArray, size) = serialize(Snapshot(snapshot))
-    log.info(s"saveAsync:metadata = ${metadata}")
+    log.info(s"saveAsync:metadata = ${snapshotMetadata}")
     log.info("saveAsync:byteArray.size = {}", byteArray.size)
     log.info("saveAsync:size = {}", size)
     val putObjectRequest = PutObjectRequest
       .builder()
       .contentLength(size.toLong)
-      .bucket(bucketNameResolver.resolve(metadata.persistenceId))
-      .key(keyConverter.convertTo(metadata))
+      .bucket(bucketNameResolver.resolve(snapshotMetadata.persistenceId))
+      .key(keyConverter.convertTo(snapshotMetadata))
       .build()
     s3AsyncClient
       .putObject(putObjectRequest, AsyncRequestBody.fromBytes(byteArray))
@@ -104,22 +116,22 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       }
   }
 
-  override def deleteAsync(metadata: SnapshotMetadata): Future[Unit] = {
-    if (metadata.timestamp == 0L)
+  override def deleteAsync(snapshotMetadata: SnapshotMetadata): Future[Unit] = {
+    if (snapshotMetadata.timestamp == 0L)
       deleteAsync(
-        metadata.persistenceId,
+        snapshotMetadata.persistenceId,
         SnapshotSelectionCriteria(
-          metadata.sequenceNr,
+          snapshotMetadata.sequenceNr,
           Long.MaxValue,
-          metadata.sequenceNr,
+          snapshotMetadata.sequenceNr,
           Long.MinValue
         )
       )
     else {
       val request = DeleteObjectRequest
         .builder()
-        .bucket(bucketNameResolver.resolve(metadata.persistenceId))
-        .key(keyConverter.convertTo(metadata))
+        .bucket(bucketNameResolver.resolve(snapshotMetadata.persistenceId))
+        .key(keyConverter.convertTo(snapshotMetadata))
         .build()
       s3AsyncClient.deleteObject(request).flatMap { response =>
         val sdkHttpResponse = response.sdkHttpResponse
@@ -147,11 +159,11 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     metadata: immutable.Seq[SnapshotMetadata]
   ): Future[Option[SelectedSnapshot]] = metadata.lastOption match {
     case None => Future.successful(None)
-    case Some(md) =>
+    case Some(snapshotMetadata) =>
       val request = GetObjectRequest
         .builder()
-        .bucket(bucketNameResolver.resolve(md.persistenceId))
-        .key(keyConverter.convertTo(md))
+        .bucket(bucketNameResolver.resolve(snapshotMetadata.persistenceId))
+        .key(keyConverter.convertTo(snapshotMetadata))
         .build()
       s3AsyncClient
         .getObject(request, AsyncResponseTransformer.toBytes())
@@ -163,14 +175,14 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
               s"load:responseBytes.length = ${responseBytes.asByteArray().length}"
             )
             val snapshot = deserialize(responseBytes.asByteArray())
-            Some(SelectedSnapshot(md, snapshot.data))
+            Some(SelectedSnapshot(snapshotMetadata, snapshot.data))
           } else {
             log.warning("load: result = None")
             None
           }
         } recoverWith {
         case NonFatal(e) =>
-          log.error(e, s"Error loading snapshot [${md}]")
+          log.error(e, s"Error loading snapshot [${snapshotMetadata}]")
           load(metadata.init) // try older snapshot
       }
   }
@@ -179,13 +191,13 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     persistenceId: String,
     criteria: SnapshotSelectionCriteria
   ): Future[List[SnapshotMetadata]] = {
-    val request =
-      ListObjectsRequest
-        .builder()
-        .bucket(bucketNameResolver.resolve(persistenceId))
-        .prefix(prefixFromPersistenceId(persistenceId))
-        .delimiter("/")
-        .build()
+    var builder = ListObjectsRequest
+      .builder()
+      .bucket(bucketNameResolver.resolve(persistenceId))
+      .delimiter("/")
+    builder =
+      prefixFromPersistenceId(persistenceId).fold(builder)(builder.prefix)
+    val request = builder.build()
     s3AsyncClient
       .listObjects(request)
       .flatMap { response =>
@@ -199,11 +211,11 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
               .map { s =>
                 keyConverter.convertFrom(s.key())
               }
-              .filter { m =>
-                m.sequenceNr >= criteria.minSequenceNr &&
-                m.sequenceNr <= criteria.maxSequenceNr &&
-                m.timestamp >= criteria.minTimestamp &&
-                m.timestamp <= criteria.maxTimestamp
+              .filter { snapshotMetadata =>
+                snapshotMetadata.sequenceNr >= criteria.minSequenceNr &&
+                snapshotMetadata.sequenceNr <= criteria.maxSequenceNr &&
+                snapshotMetadata.timestamp >= criteria.minTimestamp &&
+                snapshotMetadata.timestamp <= criteria.maxTimestamp
               }
           )
         else
@@ -215,9 +227,6 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       }
 
   }
-
-  def prefixFromPersistenceId(persisitenceId: String): String =
-    s"$persisitenceId/"
 
   protected def deserialize(bytes: Array[Byte]): Snapshot =
     serialization
