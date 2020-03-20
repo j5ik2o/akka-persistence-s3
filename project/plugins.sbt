@@ -3,13 +3,7 @@ resolvers ++= Seq(
   "Sonatype OSS Release Repository" at "https://oss.sonatype.org/content/repositories/releases/"
 )
 
-libraryDependencies ++= Seq(
-  "com.thesamet.scalapb" %% "compilerplugin" % "0.9.0"
-)
-
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.3.2")
-
-addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.25")
 
 addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.13")
 
