@@ -2,7 +2,10 @@ package com.github.j5ik2o.akka.persistence.s3.utils
 
 import java.net.URI
 
-import com.github.j5ik2o.akka.persistence.s3.config.S3ClientConfig
+import com.github.j5ik2o.akka.persistence.s3.config.{
+  S3ClientConfig,
+  S3ClientOptionsConfig
+}
 import software.amazon.awssdk.auth.credentials.{
   AwsBasicCredentials,
   StaticCredentialsProvider
@@ -19,25 +22,50 @@ object S3ClientBuilderUtils {
 
   def setup(clientConfig: S3ClientConfig,
             httpClientBuilder: SdkAsyncHttpClient): S3AsyncClientBuilder = {
-    var dynamoDbAsyncClientBuilder =
+    var builder =
       S3AsyncClient.builder().httpClient(httpClientBuilder)
     (clientConfig.accessKeyId, clientConfig.secretAccessKey) match {
       case (Some(a), Some(s)) =>
-        dynamoDbAsyncClientBuilder =
-          dynamoDbAsyncClientBuilder.credentialsProvider(
-            StaticCredentialsProvider.create(AwsBasicCredentials.create(a, s))
-          )
+        builder = builder.credentialsProvider(
+          StaticCredentialsProvider.create(AwsBasicCredentials.create(a, s))
+        )
       case _ =>
     }
     clientConfig.endpoint.foreach { ep =>
-      dynamoDbAsyncClientBuilder =
-        dynamoDbAsyncClientBuilder.endpointOverride(URI.create(ep))
+      builder = builder.endpointOverride(URI.create(ep))
     }
     clientConfig.region.foreach { r =>
-      dynamoDbAsyncClientBuilder =
-        dynamoDbAsyncClientBuilder.region(Region.of(r))
+      builder = builder.region(Region.of(r))
     }
-    dynamoDbAsyncClientBuilder
+    clientConfig.s3OptionConfig.foreach { o =>
+      builder = builder.serviceConfiguration(getS3Configuration(o))
+    }
+    builder
+  }
+
+  private def getS3Configuration(
+    s3ClientOptionConfig: S3ClientOptionsConfig
+  ): S3Configuration = {
+    var builder = S3Configuration.builder()
+    s3ClientOptionConfig.dualstackEnabled.foreach { c =>
+      builder = builder.dualstackEnabled(c)
+    }
+    s3ClientOptionConfig.accelerateModeEnabled.foreach { c =>
+      builder = builder.accelerateModeEnabled(c)
+    }
+    s3ClientOptionConfig.pathStyleAccessEnabled.foreach { c =>
+      builder = builder.pathStyleAccessEnabled(c)
+    }
+    s3ClientOptionConfig.checksumValidationEnabled.foreach { c =>
+      builder = builder.checksumValidationEnabled(c)
+    }
+    s3ClientOptionConfig.chunkedEncodingEnabled.foreach { c =>
+      builder = builder.checksumValidationEnabled(c)
+    }
+    s3ClientOptionConfig.useArnRegionEnabled.foreach { c =>
+      builder = builder.useArnRegionEnabled(c)
+    }
+    builder.build()
   }
 
 }

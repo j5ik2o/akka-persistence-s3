@@ -2,7 +2,6 @@ package com.github.j5ik2o.akka.persistence.s3.config
 
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._
-import software.amazon.awssdk.services.s3.S3Configuration
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -31,6 +30,18 @@ object S3ClientConfig {
         rootConfig.getAs[Int]("threads-of-event-loop-group"),
       userHttp2 = rootConfig.getAs[Boolean]("user-http2"),
       maxHttp2Streams = rootConfig.getAs[Int]("max-http2-streams"),
+      s3OptionConfig = rootConfig
+        .getAs[Config]("s3-options")
+        .map(S3ClientOptionsConfig.fromConfig)
+    )
+    result
+  }
+}
+
+object S3ClientOptionsConfig {
+
+  def fromConfig(rootConfig: Config): S3ClientOptionsConfig = {
+    S3ClientOptionsConfig(
       dualstackEnabled = rootConfig.getAs[Boolean]("dualstack-enabled"),
       accelerateModeEnabled =
         rootConfig.getAs[Boolean]("accelerate-mode-enabled"),
@@ -42,9 +53,16 @@ object S3ClientConfig {
         rootConfig.getAs[Boolean]("chunked-encoding-enabled"),
       useArnRegionEnabled = rootConfig.getAs[Boolean]("use-arn-region-enabled")
     )
-    result
   }
+
 }
+
+case class S3ClientOptionsConfig(dualstackEnabled: Option[Boolean],
+                                 accelerateModeEnabled: Option[Boolean],
+                                 pathStyleAccessEnabled: Option[Boolean],
+                                 checksumValidationEnabled: Option[Boolean],
+                                 chunkedEncodingEnabled: Option[Boolean],
+                                 useArnRegionEnabled: Option[Boolean])
 
 case class S3ClientConfig(accessKeyId: Option[String],
                           secretAccessKey: Option[String],
@@ -62,9 +80,4 @@ case class S3ClientConfig(accessKeyId: Option[String],
                           threadsOfEventLoopGroup: Option[Int],
                           userHttp2: Option[Boolean],
                           maxHttp2Streams: Option[Int],
-                          dualstackEnabled: Option[Boolean],
-                          accelerateModeEnabled: Option[Boolean],
-                          pathStyleAccessEnabled: Option[Boolean],
-                          checksumValidationEnabled: Option[Boolean],
-                          chunkedEncodingEnabled: Option[Boolean],
-                          useArnRegionEnabled: Option[Boolean])
+                          s3OptionConfig: Option[S3ClientOptionsConfig])
