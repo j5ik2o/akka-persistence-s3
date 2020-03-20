@@ -35,8 +35,9 @@ val coreSettings = Seq(
     <url>https://github.com/j5ik2o/akka-persistence-kafka</url>
       <licenses>
         <license>
-          <name>The MIT License</name>
-          <url>http://opensource.org/licenses/MIT</url>
+          <name>Apache 2</name>
+          <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+          <distribution>repo</distribution>
         </license>
       </licenses>
       <scm>
