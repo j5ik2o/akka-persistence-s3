@@ -37,6 +37,9 @@ j5ik2o {
   s3-snapshot-store {
     bucket-name-resolver-class-name = "com.github.j5ik2o.akka.persistence.s3.resolver.BucketNameResolver$PersistenceId"
     key-converter-class-name = "com.github.j5ik2o.akka.persistence.s3.resolver.KeyConverter$PersistenceId"
+    path-prefix-resolver-class-name = "com.github.j5ik2o.akka.persistence.s3.resolver.PathPrefixResolver$PersistenceId"
+    extension-name = "snapshot"
+    max-load-attempts = 3
     s3-client {
       # Set the following as needed
       access-key-id = ""
