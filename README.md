@@ -42,9 +42,9 @@ j5ik2o {
     max-load-attempts = 3
     s3-client {
       # Set the following as needed
-      access-key-id = ""
-      secret-access-key = ""
-      endpoint = ""
+      access-key-id = "..."
+      secret-access-key = "..."
+      endpoint = "..."
       s3-options {
         path-style-access-enabled = true
       }
