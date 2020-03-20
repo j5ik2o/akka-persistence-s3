@@ -42,11 +42,12 @@ case class TCPPortReadyChecker(port: Int,
       var socket: Socket = null
       Future {
         try {
-          Thread.sleep(duration.toMillis)
           socket = new Socket(host.getOrElse(docker.host), p)
-          socket.isConnected
+          val result = socket.isConnected
+          Thread.sleep(duration.toMillis)
+          result
         } catch {
-          case e: Exception =>
+          case _: Exception =>
             false
         } finally {
           if (socket != null)
@@ -110,7 +111,7 @@ class S3SnapshotStoreSpec
         TCPPortReadyChecker(
           minioPort,
           duration = Duration(
-            500 * sys.env("SBT_TEST_TIME_FACTOR").toInt,
+            500 * sys.env.getOrElse("SBT_TEST_TIME_FACTOR", "1").toInt,
             TimeUnit.MILLISECONDS
           )
         )
