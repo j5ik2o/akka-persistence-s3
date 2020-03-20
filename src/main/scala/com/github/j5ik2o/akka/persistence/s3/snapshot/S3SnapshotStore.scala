@@ -54,33 +54,27 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
   private val s3AsyncClient = S3AsyncClient(javaS3ClientBuilder.build())
   private val serialization = SerializationExtension(system)
 
+  private val bucketNameResolverClassName =
+    config.as[String]("bucket-name-resolver-class-name")
+  private val keyConverterClassName = config
+    .as[String]("key-converter-class-name")
+  private val pathPrefixResolverClassName =
+    config.as[String]("path-prefix-resolver-class-name")
+
   private val extensionName = config.as[String]("extension-name")
+  private val maxLoadAttempts = config.as[Int]("max-load-attempts")
 
   protected val bucketNameResolver: BucketNameResolver =
-    ClassUtil.create(
-      classOf[BucketNameResolver],
-      config
-        .as[String]("bucket-name-resolver-class-name")
-    )
-
+    ClassUtil.create(classOf[BucketNameResolver], bucketNameResolverClassName)
   protected val keyConverter: KeyConverter =
-    ClassUtil.create(
-      classOf[KeyConverter],
-      config
-        .as[String]("key-converter-class-name")
-    )
-
-  protected val pathPrefixResolver: PathPrefixResolver = ClassUtil.create(
-    classOf[PathPrefixResolver],
-    config.as[String]("path-prefix-resolver-class-name")
-  )
+    ClassUtil.create(classOf[KeyConverter], keyConverterClassName)
+  protected val pathPrefixResolver: PathPrefixResolver =
+    ClassUtil.create(classOf[PathPrefixResolver], pathPrefixResolverClassName)
 
   private def prefixFromPersistenceId(
     persistenceId: PersistenceId
   ): Option[String] =
     pathPrefixResolver.resolve(persistenceId)
-
-  val maxLoadAttempts = 1
 
   override def loadAsync(
     persistenceId: String,
@@ -93,9 +87,6 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
   override def saveAsync(snapshotMetadata: SnapshotMetadata,
                          snapshot: Any): Future[Unit] = {
     val (byteArray, size) = serialize(Snapshot(snapshot))
-    log.info(s"saveAsync:metadata = ${snapshotMetadata}")
-    log.info("saveAsync:byteArray.size = {}", byteArray.size)
-    log.info("saveAsync:size = {}", size)
     val putObjectRequest = PutObjectRequest
       .builder()
       .contentLength(size.toLong)
@@ -106,7 +97,6 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       .putObject(putObjectRequest, AsyncRequestBody.fromBytes(byteArray))
       .flatMap { response =>
         val sdkHttpResponse = response.sdkHttpResponse
-        log.info(s"saveAsync:response = $response")
         if (response.sdkHttpResponse().isSuccessful)
           Future.successful(())
         else
@@ -171,15 +161,9 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
         .getObject(request, AsyncResponseTransformer.toBytes())
         .map { responseBytes =>
           if (responseBytes.response().sdkHttpResponse().isSuccessful) {
-            log.info(s"load:response = ${responseBytes.response()}")
-            log.info(s"load:responseBytes = $responseBytes")
-            log.info(
-              s"load:responseBytes.length = ${responseBytes.asByteArray().length}"
-            )
             val snapshot = deserialize(responseBytes.asByteArray())
             Some(SelectedSnapshot(snapshotMetadata, snapshot.data))
           } else {
-            log.warning("load: result = None")
             None
           }
         } recoverWith {
