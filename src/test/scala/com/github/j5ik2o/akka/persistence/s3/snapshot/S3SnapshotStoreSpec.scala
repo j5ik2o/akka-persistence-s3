@@ -1,6 +1,7 @@
 package com.github.j5ik2o.akka.persistence.s3.snapshot
 
 import java.net.{Socket, URI}
+import java.util.concurrent.TimeUnit
 
 import akka.persistence.snapshot.SnapshotStoreSpec
 import com.spotify.docker.client.{DefaultDockerClient, DockerClient}
@@ -28,7 +29,10 @@ import software.amazon.awssdk.services.s3.model._
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
-case class TCPPortReadyChecker(port: Int, host: Option[String] = None)
+case class TCPPortReadyChecker(port: Int,
+                               host: Option[String] = None,
+                               duration: Duration =
+                                 Duration(500, TimeUnit.MILLISECONDS))
     extends DockerReadyChecker {
   override def apply(container: DockerContainerState)(
     implicit docker: DockerCommandExecutor,
@@ -38,7 +42,7 @@ case class TCPPortReadyChecker(port: Int, host: Option[String] = None)
       var socket: Socket = null
       Future {
         try {
-          Thread.sleep(500)
+          Thread.sleep(duration.toMillis)
           socket = new Socket(host.getOrElse(docker.host), p)
           socket.isConnected
         } catch {
@@ -102,7 +106,15 @@ class S3SnapshotStoreSpec
         s"MINIO_SECRET_KEY=$secretAccessKey"
       )
       .withPorts(minioPort -> Some(minioPort))
-      .withReadyChecker(TCPPortReadyChecker(minioPort))
+      .withReadyChecker(
+        TCPPortReadyChecker(
+          minioPort,
+          duration = Duration(
+            500 * sys.env("SBT_TEST_TIME_FACTOR").toInt,
+            TimeUnit.MILLISECONDS
+          )
+        )
+      )
       .withCommand("server", "--compat", "/data")
       .withLogLineReceiver(LogLineReceiver(true, { message =>
         println(s">>> $message")
