@@ -1,8 +1,6 @@
 val scala212Version = "2.12.10"
 val scala213Version = "2.13.1"
 val akkaVersion = "2.6.4"
-val kafkaVersion = "2.4.0"
-val alpakkaKafkaVersion = "2.0.2"
 
 val coreSettings = Seq(
   sonatypeProfileName := "com.github.j5ik2o",
