@@ -10,9 +10,10 @@ object PathPrefixResolver {
 
   class PersistenceId extends PathPrefixResolver {
     override def resolve(
-      persistenceId: com.github.j5ik2o.akka.persistence.s3.resolver.PersistenceId
-    ): Option[String] =
+        persistenceId: com.github.j5ik2o.akka.persistence.s3.resolver.PersistenceId
+    ): Option[String] = {
       Some(persistenceId + "/")
+    }
   }
 
 }

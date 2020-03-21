@@ -55,13 +55,16 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
 
   private val serialization: Serialization = SerializationExtension(system)
 
-  private def prefixFromPersistenceId(
+  private def resolvePathPrefix(
       persistenceId: PersistenceId
-  ): Option[String] =
-    pathPrefixResolver.resolve(persistenceId)
+  ): Option[String] = {
+    pluginConfig.pathPrefix.orElse(pathPrefixResolver.resolve(persistenceId))
+  }
 
   private def resolveBucketName(snapshotMetadata: SnapshotMetadata) = {
-    bucketNameResolver.resolve(snapshotMetadata.persistenceId)
+    pluginConfig.bucketName
+      .map(_.stripPrefix("/"))
+      .getOrElse(bucketNameResolver.resolve(snapshotMetadata.persistenceId))
   }
 
   private def convertToKey(snapshotMetadata: SnapshotMetadata) = {
@@ -185,7 +188,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       .builder()
       .bucket(bucketNameResolver.resolve(persistenceId))
       .delimiter("/")
-    builder = prefixFromPersistenceId(persistenceId).fold(builder)(builder.prefix)
+    builder = resolvePathPrefix(persistenceId).fold(builder)(builder.prefix)
     val request = builder.build()
     s3AsyncClient
       .listObjects(request)
