@@ -74,7 +74,7 @@ val coreSettings = Seq(
       "com.whisk"         %% "docker-testkit-impl-spotify" % "0.9.9" % Test
     ) ++ {
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2L, scalaMajor)) if scalaMajor >= 12 =>
+        case Some((2L, scalaMajor)) if scalaMajor == 13 =>
           Seq(
             "com.typesafe.akka" %% "akka-slf4j"           % akka26Version,
             "com.typesafe.akka" %% "akka-persistence"     % akka26Version,
@@ -82,13 +82,23 @@ val coreSettings = Seq(
             "com.typesafe.akka" %% "akka-persistence-tck" % akka26Version % Test,
             "org.scalatest"     %% "scalatest"            % "3.1.1" % Test
           )
-        case Some((2L, scalaMajor)) if scalaMajor <= 11 =>
+        case Some((2L, scalaMajor)) if scalaMajor == 12 =>
           Seq(
-            "com.typesafe.akka" %% "akka-slf4j"           % akka25Version,
-            "com.typesafe.akka" %% "akka-persistence"     % akka25Version,
-            "com.typesafe.akka" %% "akka-testkit"         % akka25Version % Test,
-            "com.typesafe.akka" %% "akka-persistence-tck" % akka25Version % Test,
-            "org.scalatest"     %% "scalatest"            % "3.0.8" % Test
+            "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4",
+            "com.typesafe.akka"      %% "akka-slf4j"              % akka26Version,
+            "com.typesafe.akka"      %% "akka-persistence"        % akka26Version,
+            "com.typesafe.akka"      %% "akka-testkit"            % akka26Version % Test,
+            "com.typesafe.akka"      %% "akka-persistence-tck"    % akka26Version % Test,
+            "org.scalatest"          %% "scalatest"               % "3.1.1" % Test
+          )
+        case Some((2L, scalaMajor)) if scalaMajor == 11 =>
+          Seq(
+            "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4",
+            "com.typesafe.akka"      %% "akka-slf4j"              % akka25Version,
+            "com.typesafe.akka"      %% "akka-persistence"        % akka25Version,
+            "com.typesafe.akka"      %% "akka-testkit"            % akka25Version % Test,
+            "com.typesafe.akka"      %% "akka-persistence-tck"    % akka25Version % Test,
+            "org.scalatest"          %% "scalatest"               % "3.0.8" % Test
           )
       }
     },
