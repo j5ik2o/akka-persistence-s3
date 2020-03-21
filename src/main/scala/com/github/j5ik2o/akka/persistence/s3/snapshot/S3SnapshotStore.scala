@@ -3,36 +3,25 @@ package com.github.j5ik2o.akka.persistence.s3.snapshot
 import akka.actor.ActorSystem
 import akka.persistence.serialization.Snapshot
 import akka.persistence.snapshot.SnapshotStore
-import akka.persistence.{
-  SelectedSnapshot,
-  SnapshotMetadata,
-  SnapshotSelectionCriteria
-}
-import akka.serialization.SerializationExtension
-import com.github.j5ik2o.akka.persistence.s3.config.S3ClientConfig
+import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
+import akka.serialization.{ Serialization, SerializationExtension }
+import com.github.j5ik2o.akka.persistence.s3.config.{ S3ClientConfig, SnapshotPluginConfig }
 import com.github.j5ik2o.akka.persistence.s3.resolver.{
   BucketNameResolver,
   KeyConverter,
   PathPrefixResolver,
   PersistenceId
 }
-import com.github.j5ik2o.akka.persistence.s3.utils.{
-  ClassUtil,
-  HttpClientBuilderUtils,
-  S3ClientBuilderUtils
-}
+import com.github.j5ik2o.akka.persistence.s3.utils.{ ClassUtil, HttpClientBuilderUtils, S3ClientBuilderUtils }
 import com.github.j5ik2o.reactive.aws.s3.S3AsyncClient
 import com.typesafe.config.Config
-import net.ceedubs.ficus.Ficus._
-import software.amazon.awssdk.core.async.{
-  AsyncRequestBody,
-  AsyncResponseTransformer
-}
+import software.amazon.awssdk.core.async.{ AsyncRequestBody, AsyncResponseTransformer }
 import software.amazon.awssdk.services.s3.model.{
   DeleteObjectRequest,
   GetObjectRequest,
   ListObjectsRequest,
-  PutObjectRequest
+  PutObjectRequest,
+  S3Object
 }
 
 import scala.collection.immutable
@@ -44,25 +33,18 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
   implicit val system: ActorSystem = context.system
   import system.dispatcher
 
-  private val s3ClientConfig: S3ClientConfig =
-    S3ClientConfig.fromConfig(config.getConfig("s3-client"))
+  private val pluginConfig: SnapshotPluginConfig  = SnapshotPluginConfig.fromConfig(config)
+  private val bucketNameResolverClassName: String = pluginConfig.bucketNameResolverClassName
+  private val keyConverterClassName: String       = pluginConfig.keyConverterClassName
+  private val pathPrefixResolverClassName: String = pluginConfig.pathPrefixResolverClassName
+  private val extensionName: String               = pluginConfig.extensionName
+  private val maxLoadAttempts: Int                = pluginConfig.maxLoadAttempts
+  private val s3ClientConfig: S3ClientConfig      = pluginConfig.clientConfig
 
   private val httpClientBuilder = HttpClientBuilderUtils.setup(s3ClientConfig)
   private val javaS3ClientBuilder =
     S3ClientBuilderUtils.setup(s3ClientConfig, httpClientBuilder.build())
-
   private val s3AsyncClient = S3AsyncClient(javaS3ClientBuilder.build())
-  private val serialization = SerializationExtension(system)
-
-  private val bucketNameResolverClassName =
-    config.as[String]("bucket-name-resolver-class-name")
-  private val keyConverterClassName = config
-    .as[String]("key-converter-class-name")
-  private val pathPrefixResolverClassName =
-    config.as[String]("path-prefix-resolver-class-name")
-
-  private val extensionName = config.as[String]("extension-name")
-  private val maxLoadAttempts = config.as[Int]("max-load-attempts")
 
   protected val bucketNameResolver: BucketNameResolver =
     ClassUtil.create(classOf[BucketNameResolver], bucketNameResolverClassName)
@@ -71,27 +53,51 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
   protected val pathPrefixResolver: PathPrefixResolver =
     ClassUtil.create(classOf[PathPrefixResolver], pathPrefixResolverClassName)
 
+  private val serialization: Serialization = SerializationExtension(system)
+
   private def prefixFromPersistenceId(
-    persistenceId: PersistenceId
+      persistenceId: PersistenceId
   ): Option[String] =
     pathPrefixResolver.resolve(persistenceId)
 
+  private def resolveBucketName(snapshotMetadata: SnapshotMetadata) = {
+    bucketNameResolver.resolve(snapshotMetadata.persistenceId)
+  }
+
+  private def convertToKey(snapshotMetadata: SnapshotMetadata) = {
+    keyConverter.convertTo(snapshotMetadata, extensionName)
+  }
+
+  private def convertToSnapshotMetadata(s: S3Object) = {
+    keyConverter.convertFrom(s.key(), extensionName)
+  }
+
+  protected def deserialize(bytes: Array[Byte]): Snapshot =
+    serialization
+      .deserialize(bytes, classOf[Snapshot])
+      .get
+
+  private def serialize(snapshot: Snapshot): (Array[Byte], Int) = {
+    val serialized =
+      serialization.findSerializerFor(snapshot).toBinary(snapshot)
+    (serialized, serialized.length)
+  }
+
   override def loadAsync(
-    persistenceId: String,
-    criteria: SnapshotSelectionCriteria
+      persistenceId: String,
+      criteria: SnapshotSelectionCriteria
   ): Future[Option[SelectedSnapshot]] =
     snapshotMetadatas(persistenceId, criteria)
       .map(_.sorted.takeRight(maxLoadAttempts))
       .flatMap(load)
 
-  override def saveAsync(snapshotMetadata: SnapshotMetadata,
-                         snapshot: Any): Future[Unit] = {
+  override def saveAsync(snapshotMetadata: SnapshotMetadata, snapshot: Any): Future[Unit] = {
     val (byteArray, size) = serialize(Snapshot(snapshot))
     val putObjectRequest = PutObjectRequest
       .builder()
       .contentLength(size.toLong)
-      .bucket(bucketNameResolver.resolve(snapshotMetadata.persistenceId))
-      .key(keyConverter.convertTo(snapshotMetadata, extensionName))
+      .bucket(resolveBucketName(snapshotMetadata))
+      .key(convertToKey(snapshotMetadata))
       .build()
     s3AsyncClient
       .putObject(putObjectRequest, AsyncRequestBody.fromBytes(byteArray))
@@ -122,8 +128,8 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     else {
       val request = DeleteObjectRequest
         .builder()
-        .bucket(bucketNameResolver.resolve(snapshotMetadata.persistenceId))
-        .key(keyConverter.convertTo(snapshotMetadata, extensionName))
+        .bucket(resolveBucketName(snapshotMetadata))
+        .key(convertToKey(snapshotMetadata))
         .build()
       s3AsyncClient.deleteObject(request).flatMap { response =>
         val sdkHttpResponse = response.sdkHttpResponse
@@ -140,22 +146,22 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
   }
 
   override def deleteAsync(
-    persistenceId: String,
-    criteria: SnapshotSelectionCriteria
+      persistenceId: String,
+      criteria: SnapshotSelectionCriteria
   ): Future[Unit] = {
     val metadatas = snapshotMetadatas(persistenceId, criteria)
     metadatas.map(list => Future.sequence(list.map(deleteAsync)))
   }
 
   private def load(
-    metadata: immutable.Seq[SnapshotMetadata]
+      metadata: immutable.Seq[SnapshotMetadata]
   ): Future[Option[SelectedSnapshot]] = metadata.lastOption match {
     case None => Future.successful(None)
     case Some(snapshotMetadata) =>
       val request = GetObjectRequest
         .builder()
-        .bucket(bucketNameResolver.resolve(snapshotMetadata.persistenceId))
-        .key(keyConverter.convertTo(snapshotMetadata, extensionName))
+        .bucket(resolveBucketName(snapshotMetadata))
+        .key(convertToKey(snapshotMetadata))
         .build()
       s3AsyncClient
         .getObject(request, AsyncResponseTransformer.toBytes())
@@ -163,9 +169,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
           if (responseBytes.response().sdkHttpResponse().isSuccessful) {
             val snapshot = deserialize(responseBytes.asByteArray())
             Some(SelectedSnapshot(snapshotMetadata, snapshot.data))
-          } else {
-            None
-          }
+          } else None
         } recoverWith {
         case NonFatal(e) =>
           log.error(e, s"Error loading snapshot [${snapshotMetadata}]")
@@ -174,15 +178,14 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
   }
 
   private def snapshotMetadatas(
-    persistenceId: String,
-    criteria: SnapshotSelectionCriteria
+      persistenceId: String,
+      criteria: SnapshotSelectionCriteria
   ): Future[List[SnapshotMetadata]] = {
     var builder = ListObjectsRequest
       .builder()
       .bucket(bucketNameResolver.resolve(persistenceId))
       .delimiter("/")
-    builder =
-      prefixFromPersistenceId(persistenceId).fold(builder)(builder.prefix)
+    builder = prefixFromPersistenceId(persistenceId).fold(builder)(builder.prefix)
     val request = builder.build()
     s3AsyncClient
       .listObjects(request)
@@ -194,9 +197,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
               .contents()
               .asScala
               .toList
-              .map { s =>
-                keyConverter.convertFrom(s.key(), extensionName)
-              }
+              .map(convertToSnapshotMetadata)
               .filter { snapshotMetadata =>
                 snapshotMetadata.sequenceNr >= criteria.minSequenceNr &&
                 snapshotMetadata.sequenceNr <= criteria.maxSequenceNr &&
@@ -212,17 +213,6 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
           )
       }
 
-  }
-
-  protected def deserialize(bytes: Array[Byte]): Snapshot =
-    serialization
-      .deserialize(bytes, classOf[Snapshot])
-      .get
-
-  private def serialize(snapshot: Snapshot): (Array[Byte], Int) = {
-    val serialized =
-      serialization.findSerializerFor(snapshot).toBinary(snapshot)
-    (serialized, serialized.length)
   }
 
 }
