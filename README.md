@@ -11,7 +11,7 @@ akka-persistence-s3 writes snapshot entries to AWS S3.aws-sdk-java-v2.  It's non
 
 - Java: `1.8+`
 - Scala: `2.11.x` or `2.12.x` or `2.13.x` 
-- Akka: `2.5.x`(Scala 2.11 only), `2.6.x+`
+- Akka: `2.5.x`(Scala 2.11 only), `2.6.x`
 - AWS-SDK: `2.4.x`
 
 ## Installation
