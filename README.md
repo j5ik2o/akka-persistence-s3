@@ -35,8 +35,14 @@ The minimum necessary settings are as follows.
 ```
 j5ik2o {
   s3-snapshot-store {
+    # if need to resolve a static value
+    # bucket-name = "..."
+    # if need to resolve a dynamic value
     bucket-name-resolver-class-name = "com.github.j5ik2o.akka.persistence.s3.resolver.BucketNameResolver$PersistenceId"
     key-converter-class-name = "com.github.j5ik2o.akka.persistence.s3.resolver.KeyConverter$PersistenceId"
+    # if need to resolve a static value
+    # path-prefix = "..."
+    # if need to resolve a dynamic value
     path-prefix-resolver-class-name = "com.github.j5ik2o.akka.persistence.s3.resolver.PathPrefixResolver$PersistenceId"
     extension-name = "snapshot"
     max-load-attempts = 3
