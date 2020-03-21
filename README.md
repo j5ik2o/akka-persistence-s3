@@ -45,8 +45,27 @@ j5ik2o {
       access-key-id = "..."
       secret-access-key = "..."
       endpoint = "..."
+      max-concurrency = 128
+      max-pending-connection-acquires = ?
+      read-timeout = 3 s
+      write-timeout = 3 s
+      connection-timeout = 3 s
+      connection-acquisition-timeout = 3 s
+      connection-time-to-live = 3 s
+      max-idle-connection-timeout = 3 s
+      use-connection-reaper = true
+      threads-of-event-loop-group = 32
+      user-http2 = true
+      max-http2-streams = 32
+      batch-get-item-limit = 100
+      batch-write-item-limit = 25
       s3-options {
+        dualstack-enabled = false
+        accelerate-mode-enabled = false
         path-style-access-enabled = true
+        checksum-validation-enabled = false
+        chunked-encoding-enabled = false
+        use-arn-region-enabled = false
       }
     }
   }
