@@ -1,12 +1,14 @@
+val scala211Version = "2.11.12"
 val scala212Version = "2.12.10"
 val scala213Version = "2.13.1"
-val akkaVersion = "2.6.4"
+val akka26Version   = "2.6.4"
+val akka25Version   = "2.5.30"
 
 val coreSettings = Seq(
   sonatypeProfileName := "com.github.j5ik2o",
   organization := "com.github.j5ik2o",
-  scalaVersion := scala213Version,
-  crossScalaVersions ++= Seq(scala212Version, scala213Version),
+  scalaVersion := scala211Version,
+  crossScalaVersions ++= Seq(scala211Version, scala212Version, scala213Version),
   scalacOptions ++= {
     Seq(
       "-feature",
@@ -14,7 +16,8 @@ val coreSettings = Seq(
       "-unchecked",
       "-encoding",
       "UTF-8",
-      "-language:_"
+      "-language:_",
+      "-target:jvm-1.8"
     ) ++ {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2L, scalaMajor)) if scalaMajor >= 12 =>
@@ -26,11 +29,9 @@ val coreSettings = Seq(
   },
   publishMavenStyle := true,
   publishArtifact in Test := false,
-  pomIncludeRepository := { _ =>
-    false
-  },
+  pomIncludeRepository := { _ => false },
   pomExtra := {
-    <url>https://github.com/j5ik2o/akka-persistence-kafka</url>
+    <url>https://github.com/j5ik2o/akka-persistence-s3</url>
       <licenses>
         <license>
           <name>Apache 2</name>
@@ -57,26 +58,40 @@ val coreSettings = Seq(
     Credentials(ivyCredentials) :: Credentials(gpgCredentials) :: Nil
   },
   resolvers ++= Seq(
-    "Sonatype OSS Snapshot Repository" at "https://oss.sonatype.org/content/repositories/snapshots/",
-    "Sonatype OSS Release Repository" at "https://oss.sonatype.org/content/repositories/releases/",
-    "Seasar Repository" at "https://maven.seasar.org/maven2/",
-    "jitpack" at "https://jitpack.io"
-  ),
+      "Sonatype OSS Snapshot Repository" at "https://oss.sonatype.org/content/repositories/snapshots/",
+      "Sonatype OSS Release Repository" at "https://oss.sonatype.org/content/repositories/releases/",
+      "Seasar Repository" at "https://maven.seasar.org/maven2/",
+      "jitpack" at "https://jitpack.io"
+    ),
   libraryDependencies ++= Seq(
-    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-    "com.iheart" %% "ficus" % "1.4.7",
-    "org.slf4j" % "slf4j-api" % "1.7.25",
-    "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
-    "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
-    "com.github.j5ik2o" %% "reactive-aws-s3-core" % "1.1.7",
-    "org.scalatest" %% "scalatest" % "3.1.1" % Test,
-    "org.scalacheck" %% "scalacheck" % "1.14.3" % Test,
-    "ch.qos.logback" % "logback-classic" % "1.2.3" % Test,
-    "com.typesafe.akka" %% "akka-testkit" % akkaVersion % Test,
-    "com.typesafe.akka" %% "akka-persistence-tck" % akkaVersion % Test,
-    "com.whisk" %% "docker-testkit-scalatest" % "0.9.9" % Test,
-    "com.whisk" %% "docker-testkit-impl-spotify" % "0.9.9" % Test
-  ),
+      "org.scala-lang"    % "scala-reflect"                % scalaVersion.value,
+      "com.iheart"        %% "ficus"                       % "1.4.7",
+      "org.slf4j"         % "slf4j-api"                    % "1.7.25",
+      "com.github.j5ik2o" %% "reactive-aws-s3-core"        % "1.1.7",
+      "org.scalacheck"    %% "scalacheck"                  % "1.14.3" % Test,
+      "ch.qos.logback"    % "logback-classic"              % "1.2.3" % Test,
+      "com.whisk"         %% "docker-testkit-scalatest"    % "0.9.9" % Test,
+      "com.whisk"         %% "docker-testkit-impl-spotify" % "0.9.9" % Test
+    ) ++ {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2L, scalaMajor)) if scalaMajor >= 12 =>
+          Seq(
+            "com.typesafe.akka" %% "akka-slf4j"           % akka26Version,
+            "com.typesafe.akka" %% "akka-persistence"     % akka26Version,
+            "com.typesafe.akka" %% "akka-testkit"         % akka26Version % Test,
+            "com.typesafe.akka" %% "akka-persistence-tck" % akka26Version % Test,
+            "org.scalatest"     %% "scalatest"            % "3.1.1" % Test
+          )
+        case Some((2L, scalaMajor)) if scalaMajor <= 11 =>
+          Seq(
+            "com.typesafe.akka" %% "akka-slf4j"           % akka25Version,
+            "com.typesafe.akka" %% "akka-persistence"     % akka25Version,
+            "com.typesafe.akka" %% "akka-testkit"         % akka25Version % Test,
+            "com.typesafe.akka" %% "akka-persistence-tck" % akka25Version % Test,
+            "org.scalatest"     %% "scalatest"            % "3.0.8" % Test
+          )
+      }
+    },
   parallelExecution in Test := false
 )
 
