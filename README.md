@@ -10,13 +10,13 @@ akka-persistence-s3 writes snapshot entries to AWS S3.aws-sdk-java-v2.  It's non
 ## Supported versions:
 
 - Java: `1.8+`
-- Scala: `2.12.x` or `2.13.x` 
-- Akka: `2.6.x+`
+- Scala: `2.11.x` or `2.12.x` or `2.13.x` 
+- Akka: `2.5.x`(Scala 2.11 only), `2.6.x+`
 - AWS-SDK: `2.4.x`
 
 ## Installation
 
-Add the following to your sbt build (2.12.x, 2.13.x):
+Add the following to your sbt build (2.11.x, 2.12.x, 2.13.x):
 
 ```scala
 resolvers += "Sonatype OSS Release Repository" at "https://oss.sonatype.org/content/repositories/releases/"
