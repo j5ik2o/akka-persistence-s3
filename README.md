@@ -5,7 +5,7 @@
 [![Scaladoc](http://javadoc-badge.appspot.com/com.github.j5ik2o/akka-persistence-s3_2.12.svg?label=scaladoc)](http://javadoc-badge.appspot.com/com.github.j5ik2o/akka-persistence-s3_2.12/com/github/j5ik2o/akka/persistence/s3/index.html?javadocio=true)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-akka-persistence-s3 writes snapshot entries to AWS S3.aws-sdk-java-v2.  It's non-blocking I/ O used by aws-sdk-java-v2.
+akka-persistence-s3 writes snapshot entries to AWS S3.aws-sdk-java-v2.  It's non-blocking I/ O used by [aws-sdk-java-v2](https://github.com/aws/aws-sdk-java-v2).
 
 ## Supported versions:
 
