@@ -66,8 +66,8 @@ val coreSettings = Seq(
   libraryDependencies ++= Seq(
       "org.scala-lang"    % "scala-reflect"                % scalaVersion.value,
       "com.iheart"        %% "ficus"                       % "1.4.7",
-      "org.slf4j"         % "slf4j-api"                    % "1.7.25",
-      "com.github.j5ik2o" %% "reactive-aws-s3-core"        % "1.1.8",
+      "org.slf4j"         % "slf4j-api"                    % "1.7.30",
+      "com.github.j5ik2o" %% "reactive-aws-s3-core"        % "1.1.7",
       "org.scalacheck"    %% "scalacheck"                  % "1.14.3" % Test,
       "ch.qos.logback"    % "logback-classic"              % "1.2.3" % Test,
       "com.whisk"         %% "docker-testkit-scalatest"    % "0.9.9" % Test,
