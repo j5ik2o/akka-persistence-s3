@@ -1,4 +1,4 @@
-# akka-persistence-s3(supports aws sdk for java v2)
+# akka-persistence-s3(support aws sdk for java v2)
 
 [![CircleCI](https://circleci.com/gh/j5ik2o/akka-persistence-s3/tree/master.svg?style=shield&circle-token=d764dfd21bb20c816689c236607ac1426a72b581)](https://circleci.com/gh/j5ik2o/akka-persistence-s3/tree/master)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.j5ik2o/akka-persistence-s3_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.j5ik2o/akka-persistence-s3_2.12)
