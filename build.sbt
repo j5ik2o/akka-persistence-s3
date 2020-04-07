@@ -32,24 +32,23 @@ val coreSettings = Seq(
   pomIncludeRepository := { _ => false },
   pomExtra := {
     <url>https://github.com/j5ik2o/akka-persistence-s3</url>
-      <licenses>
-        <license>
-          <name>Apache 2</name>
-          <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
-          <distribution>repo</distribution>
-        </license>
-      </licenses>
-      <scm>
-        <url>git@github.com:j5ik2o/akka-persistence-s3.git</url>
-        <connection>scm:git:github.com/j5ik2o/akka-persistence-s3</connection>
-        <developerConnection>scm:git:git@github.com:j5ik2o/akka-persistence-s3.git</developerConnection>
-      </scm>
-      <developers>
-        <developer>
-          <id>j5ik2o</id>
-          <name>Junichi Kato</name>
-        </developer>
-      </developers>
+    <licenses>
+      <license>
+        <name>Apache 2</name>
+        <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      </license>
+    </licenses>
+    <scm>
+      <url>git@github.com:j5ik2o/akka-persistence-s3.git</url>
+      <connection>scm:git:github.com/j5ik2o/akka-persistence-s3</connection>
+      <developerConnection>scm:git:git@github.com:j5ik2o/akka-persistence-s3.git</developerConnection>
+    </scm>
+    <developers>
+      <developer>
+        <id>j5ik2o</id>
+        <name>Junichi Kato</name>
+      </developer>
+    </developers>
   },
   publishTo := sonatypePublishToBundle.value,
   credentials := {
