@@ -1,6 +1,6 @@
 package com.github.j5ik2o.akka.persistence.s3.snapshot
 
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSystem, DynamicAccess, ExtendedActorSystem }
 import akka.persistence.serialization.Snapshot
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
@@ -12,7 +12,7 @@ import com.github.j5ik2o.akka.persistence.s3.resolver.{
   PathPrefixResolver,
   PersistenceId
 }
-import com.github.j5ik2o.akka.persistence.s3.utils.{ ClassUtil, HttpClientBuilderUtils, S3ClientBuilderUtils }
+import com.github.j5ik2o.akka.persistence.s3.utils.{ HttpClientBuilderUtils, S3ClientBuilderUtils }
 import com.github.j5ik2o.reactive.aws.s3.S3AsyncClient
 import com.typesafe.config.Config
 import software.amazon.awssdk.core.async.{ AsyncRequestBody, AsyncResponseTransformer }
@@ -46,12 +46,26 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     S3ClientBuilderUtils.setup(s3ClientConfig, httpClientBuilder.build())
   private val s3AsyncClient = S3AsyncClient(javaS3ClientBuilder.build())
 
-  protected val bucketNameResolver: BucketNameResolver =
-    ClassUtil.create(classOf[BucketNameResolver], bucketNameResolverClassName)
-  protected val keyConverter: KeyConverter =
-    ClassUtil.create(classOf[KeyConverter], keyConverterClassName)
-  protected val pathPrefixResolver: PathPrefixResolver =
-    ClassUtil.create(classOf[PathPrefixResolver], pathPrefixResolverClassName)
+  private val extendedSystem: ExtendedActorSystem = system.asInstanceOf[ExtendedActorSystem]
+  private val dynamicAccess: DynamicAccess        = extendedSystem.dynamicAccess
+
+  protected val bucketNameResolver: BucketNameResolver = {
+    dynamicAccess
+      .createInstanceFor[BucketNameResolver](bucketNameResolverClassName, immutable.Seq(classOf[Config] -> config))
+      .getOrElse(throw new ClassNotFoundException(bucketNameResolverClassName))
+  }
+
+  protected val keyConverter: KeyConverter = {
+    dynamicAccess
+      .createInstanceFor[KeyConverter](keyConverterClassName, immutable.Seq(classOf[Config] -> config))
+      .getOrElse(throw new ClassNotFoundException(keyConverterClassName))
+  }
+
+  protected val pathPrefixResolver: PathPrefixResolver = {
+    dynamicAccess
+      .createInstanceFor[PathPrefixResolver](pathPrefixResolverClassName, immutable.Seq(classOf[Config] -> config))
+      .getOrElse(throw new ClassNotFoundException(pathPrefixResolverClassName))
+  }
 
   private val serialization: Serialization = SerializationExtension(system)
 

@@ -1,6 +1,7 @@
 package com.github.j5ik2o.akka.persistence.s3.resolver
 
 import akka.persistence.SnapshotMetadata
+import com.typesafe.config.Config
 
 import scala.util.matching.Regex
 
@@ -14,13 +15,11 @@ trait KeyConverter {
 
 object KeyConverter {
 
-  class PersistenceId extends KeyConverter {
-    override def convertTo(snapshotMetadata: SnapshotMetadata,
-                           extensionName: String): Key =
+  class PersistenceId(config: Config) extends KeyConverter {
+    override def convertTo(snapshotMetadata: SnapshotMetadata, extensionName: String): Key =
       s"${snapshotMetadata.persistenceId}/${snapshotMetadata.sequenceNr.toString.reverse}-${snapshotMetadata.timestamp}.$extensionName"
 
-    override def convertFrom(key: Key,
-                             extensionName: String): SnapshotMetadata = {
+    override def convertFrom(key: Key, extensionName: String): SnapshotMetadata = {
       val pattern: Regex = ("""^(.+)/(\d+)-(\d+)\.""" + extensionName + "$").r
       key match {
         case pattern(
