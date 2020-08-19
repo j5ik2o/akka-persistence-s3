@@ -64,7 +64,7 @@ val coreSettings = Seq(
     ),
   libraryDependencies ++= Seq(
       "org.scala-lang"    % "scala-reflect"                % scalaVersion.value,
-      "com.iheart"        %% "ficus"                       % "1.4.7",
+      "com.iheart"        %% "ficus"                       % "1.5.0",
       "org.slf4j"         % "slf4j-api"                    % "1.7.30",
       "com.github.j5ik2o" %% "reactive-aws-s3-core"        % "1.2.6",
       "org.scalacheck"    %% "scalacheck"                  % "1.14.3" % Test,
