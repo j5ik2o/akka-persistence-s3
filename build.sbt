@@ -2,7 +2,7 @@ val scala211Version = "2.11.12"
 val scala212Version = "2.12.10"
 val scala213Version = "2.13.1"
 val akka26Version   = "2.6.6"
-val akka25Version   = "2.5.31"
+val akka25Version   = "2.5.32"
 
 val coreSettings = Seq(
   sonatypeProfileName := "com.github.j5ik2o",
