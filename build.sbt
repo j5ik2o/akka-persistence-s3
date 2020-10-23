@@ -131,8 +131,16 @@ lazy val journal = (project in file("journal"))
   .settings(name := "akka-persistence-s3-journal")
   .dependsOn(base)
 
-lazy val `root` = (project in file("."))
+lazy val snapshot = (project in file("snapshot"))
   .settings(coreSettings)
   .settings(deploySettings)
-  .settings(name := "akka-persistence-s3")
+  .settings(name := "akka-persistence-s3-snapshot")
   .dependsOn(base)
+
+lazy val root = (project in file("."))
+  .settings(coreSettings)
+  .settings(deploySettings)
+  .settings(
+    skip in publish := true
+  )
+  .aggregate(base, journal, snapshot)
