@@ -1,8 +1,8 @@
 val scala211Version            = "2.11.12"
 val scala212Version            = "2.12.10"
 val scala213Version            = "2.13.1"
-val akka26Version              = "2.6.6"
-val akka25Version              = "2.5.31"
+val akka26Version              = "2.6.10"
+val akka25Version              = "2.5.32"
 val testcontainersScalaVersion = "0.38.4"
 
 val coreSettings = Seq(
@@ -65,7 +65,7 @@ val coreSettings = Seq(
     ),
   libraryDependencies ++= Seq(
       "org.scala-lang"     % "scala-reflect"                   % scalaVersion.value,
-      "com.iheart"        %% "ficus"                           % "1.4.7",
+      "com.iheart"        %% "ficus"                           % "1.5.0",
       "org.slf4j"          % "slf4j-api"                       % "1.7.30",
       "com.github.j5ik2o" %% "reactive-aws-s3-core"            % "1.2.6",
       "org.scalacheck"    %% "scalacheck"                      % "1.14.3"                   % Test,
