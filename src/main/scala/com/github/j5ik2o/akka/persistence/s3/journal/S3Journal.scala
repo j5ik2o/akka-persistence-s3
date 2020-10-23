@@ -18,7 +18,6 @@ import software.amazon.awssdk.services.s3.model._
 
 import scala.collection.immutable
 import scala.collection.immutable.{ Nil, Seq }
-import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 import scala.util.{ Failure, Success, Try }
@@ -52,8 +51,12 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
       .getOrElse(bucketNameResolver.resolve(persistenceId))
   }
 
-  private def resolveKey(persistenceId: PersistenceId, seqNr: Long): String = {
-    "%s.%011d.journal".format(persistenceId.asString, seqNr)
+  private def resolveKey(persistenceId: PersistenceId, seqNr: Long, deleted: Boolean = false): String = {
+    val k = "%s.%011d".format(persistenceId.asString, seqNr)
+    if (deleted)
+      k + ".deleted.journal"
+    else
+      k + ".journal"
   }
 
   protected val serializer: FlowPersistentReprSerializer[JournalRow] =
@@ -86,7 +89,11 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
       .foldLeft(Future.successful(Vector.empty[PutObjectResponse])) {
         case (result, journalRow) =>
           val key = resolveKey(journalRow.persistenceId, journalRow.sequenceNumber.value)
-          val req = PutObjectRequest.builder().bucket(resolveBucketName(journalRow.persistenceId)).key(key).build()
+          val req = PutObjectRequest
+            .builder()
+            .bucket(resolveBucketName(journalRow.persistenceId))
+            .key(key)
+            .build()
           for {
             r <- result
             e <- s3AsyncClient.putObject(req, new ByteArrayAsyncRequestBody(journalRow.message))
@@ -106,6 +113,7 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
     val req = ListObjectsV2Request
       .builder()
       .bucket(resolveBucketName(pid))
+      .delimiter("/")
       .build()
     Source
       .single(req)
@@ -114,95 +122,104 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
           .listObjectsV2(req)
       }
       .mapConcat { res =>
-        res.contents.asScala.map { obj =>
-          val key    = obj.key()
-          val result = key.split("\\.")
-          val pid    = result(0)
-          val seqNr  = result(1).toLong
-          (key, pid, seqNr)
-        }.toVector
+        if (res.hasContents)
+          res.contents.asScala
+            .map { obj =>
+              val key    = obj.key()
+              val result = key.split("\\.")
+              val pid    = result(0)
+              val seqNr  = result(1).toLong
+              (obj, pid, seqNr)
+            }
+            .filter { case (_, pid, seqNr) => pid == persistenceId && seqNr <= toSequenceNr }
+            .toVector
+            .sortWith(_._1.key() < _._1.key())
+        else
+          Vector.empty
       }
-      .log("element")
-      .filter { case (_, pid, seqNr) => pid == persistenceId && seqNr <= toSequenceNr }
-      .map {
-        case (key, _, _) =>
-          ObjectIdentifier.builder().key(key).build()
+      .mapAsync(1) {
+        case (obj, persistenceId, seqNr) =>
+          val req = CopyObjectRequest
+            .builder()
+            .copySource(resolveBucketName(pid) + "/" + obj.key())
+            .destinationBucket(resolveBucketName(pid))
+            .destinationKey(resolveKey(pid, seqNr, true))
+            .build()
+          s3AsyncClient.copyObject(req).flatMap { _ =>
+            val req = DeleteObjectRequest.builder().bucket(resolveBucketName(pid)).key(obj.key()).build()
+            s3AsyncClient.deleteObject(req)
+          }
       }
-      .batch(10, ArrayBuffer(_)) { _ :+ _ }
-      .log("batch")
-      .mapAsync(1) { objects =>
-        val delete    = Delete.builder().objects(objects.asJava).build()
-        val deleteReq = DeleteObjectsRequest.builder().bucket(resolveBucketName(pid)).delete(delete).build()
-        s3AsyncClient.deleteObjects(deleteReq)
-      }
-      .map(_ => ())
       .withAttributes(logLevels)
-      .runWith(Sink.head)
+      .runWith(Sink.ignore)
+      .map(_ => ())
 
   }
 
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
       recoveryCallback: PersistentRepr => Unit
   ): Future[Unit] = {
-    if (max == 0 || fromSequenceNr > toSequenceNr)
-      Future.successful(())
-    else {
-      val fromSeqNr = Math.max(1, fromSequenceNr)
-      val pid       = PersistenceId(persistenceId)
-      val req = ListObjectsV2Request
-        .builder()
-        .bucket(resolveBucketName(pid))
-        .build()
-      Source
-        .single(req)
-        .mapAsync(1) { req =>
-          s3AsyncClient
-            .listObjectsV2(req)
-        }
-        .mapConcat { res =>
-          if (res.hasContents)
-            Option(res.contents)
-              .map(_.asScala)
-              .map {
-                _.map { obj =>
-                  val key    = obj.key()
-                  val result = key.split("\\.")
-                  val pid    = result(0)
-                  val seqNr  = result(1).toLong
-                  (key, pid, seqNr)
-                }.sortBy { e => e._1 }.toVector
+    val fromSeqNr = Math.max(1, fromSequenceNr)
+    val s =
+      if (max == 0 || fromSeqNr > toSequenceNr)
+        Source.empty
+      else {
+        val pid = PersistenceId(persistenceId)
+        val req = ListObjectsV2Request
+          .builder()
+          .bucket(resolveBucketName(pid))
+          .delimiter("/")
+          .build()
+        Source
+          .single(req)
+          .mapAsync(1) { req =>
+            s3AsyncClient
+              .listObjectsV2(req)
+          }
+          .mapConcat { res =>
+            if (res.hasContents)
+              res.contents.asScala
+                .map { obj =>
+                  val key     = obj.key()
+                  val result  = key.split("\\.")
+                  val pid     = result(0)
+                  val seqNr   = result(1).toLong
+                  val deleted = if (result(2) == "deleted") true else false
+                  (key, deleted, pid, seqNr)
+                }
+                .toVector
+                .sortWith(_._1 < _._1)
+            else
+              Vector.empty
+          }
+          .filter {
+            case (_, deleted, pid, seqNr) =>
+              !deleted && pid == persistenceId && fromSeqNr <= seqNr && seqNr <= toSequenceNr
+          }
+          .log("element")
+          .mapAsync(1) {
+            case (key, _, _, _) =>
+              val req = GetObjectRequest
+                .builder()
+                .bucket(resolveBucketName(pid))
+                .key(key)
+                .build()
+              s3AsyncClient.getObjectAsBytes(req).map { result =>
+                result.asByteArray()
               }
-              .getOrElse(Vector.empty)
-          else
-            Vector.empty
-        }
-        .filter {
-          case (_, pid, seqNr) =>
-            pid == persistenceId && fromSeqNr <= seqNr && seqNr <= toSequenceNr
-        }
-        .log("element")
-        .mapAsync(1) {
-          case (key, _, _) =>
-            val req = GetObjectRequest
-              .builder()
-              .bucket(resolveBucketName(pid))
-              .key(key)
-              .build()
-            s3AsyncClient.getObjectAsBytes(req).map { result =>
-              result.asByteArray()
-            }
-        }
-        .map { bytes =>
-          serialization
-            .deserialize(bytes, classOf[PersistentRepr])
-        }
-        .take(max)
-        .withAttributes(logLevels)
-        .runForeach { result =>
-          result.foreach(recoveryCallback)
-        }
-        .map(_ => ())
-    }
+          }
+          .map { bytes =>
+            serialization
+              .deserialize(bytes, classOf[PersistentRepr])
+          }
+          .take(max)
+      }
+    s
+      .withAttributes(logLevels)
+      .runForeach { result =>
+        result.foreach(recoveryCallback)
+      }
+      .map(_ => ())
   }
 
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] = {
@@ -211,6 +228,7 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
     val req = ListObjectsV2Request
       .builder()
       .bucket(resolveBucketName(pid))
+      .delimiter("/")
       .build()
     Source
       .single(req)
@@ -227,16 +245,17 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
                 val result = key.split("\\.")
                 val pid    = result(0)
                 val seqNr  = result(1).toLong
-                (key, pid, seqNr)
+                (pid, seqNr)
               }
               .filter {
-                case (_, pid, seqNr) =>
+                case (pid, seqNr) =>
                   pid == persistenceId && fromSeqNr <= seqNr
               }
               .toVector
+              .sortWith(_._1 < _._1)
           else
             Vector.empty
-        s.lastOption.fold(0L)(_._3)
+        s.lastOption.fold(0L)(_._2)
       }
       .withAttributes(logLevels)
       .runWith(Sink.head)

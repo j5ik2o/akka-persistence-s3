@@ -2,7 +2,7 @@ package com.github.j5ik2o.akka.persistence.s3.journal
 
 import akka.actor.ActorSystem
 import akka.persistence.CapabilityFlag
-import akka.persistence.journal.JournalSpec
+import akka.persistence.journal.MyJournalSpec
 import com.dimafeng.testcontainers.{ Container, ForEachTestContainer }
 import com.github.j5ik2o.akka.persistence.s3.ConfigHelper
 import com.github.j5ik2o.akka.persistence.s3.config.JournalPluginConfig
@@ -17,7 +17,7 @@ object S3JournalSpec {
   val bucketName      = JournalPluginConfig.defaultBucketName
 }
 class S3JournalSpec
-    extends JournalSpec(
+    extends MyJournalSpec(
       ConfigHelper.config(
         "journal-reference",
         S3JournalSpec.minioPort,

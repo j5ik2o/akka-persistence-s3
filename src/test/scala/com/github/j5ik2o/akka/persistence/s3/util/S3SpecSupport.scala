@@ -3,9 +3,10 @@ package com.github.j5ik2o.akka.persistence.s3.util
 import java.net.URI
 
 import akka.actor.ActorSystem
-import com.dimafeng.testcontainers.FixedHostPortGenericContainer
+import com.dimafeng.testcontainers.{ Container, FixedHostPortGenericContainer }
 import com.github.j5ik2o.reactive.aws.s3.S3AsyncClient
 import org.scalatest.TestSuite
+import org.testcontainers.containers.{ BindMode, SelinuxContext }
 import org.testcontainers.containers.wait.strategy.Wait
 import software.amazon.awssdk.auth.credentials.{ AwsBasicCredentials, StaticCredentialsProvider }
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest
@@ -22,14 +23,19 @@ trait S3SpecSupport { this: TestSuite =>
   protected def minioSecretAccessKey: String
   protected def minioPort: Int
 
-  protected lazy val minioContainer = FixedHostPortGenericContainer(
-    s3ImageName,
-    env = Map("MINIO_ACCESS_KEY" -> minioAccessKeyId, "MINIO_SECRET_KEY" -> minioSecretAccessKey),
-    command = Seq("server", "--compat", "data"),
-    exposedHostPort = minioPort,
-    exposedContainerPort = 9000,
-    waitStrategy = Wait.defaultWaitStrategy()
-  )
+  protected lazy val minioContainer: Container =
+    FixedHostPortGenericContainer(
+      s3ImageName,
+      env = Map("MINIO_ACCESS_KEY" -> minioAccessKeyId, "MINIO_SECRET_KEY" -> minioSecretAccessKey),
+      command = Seq("server", "--compat", "/data"),
+      exposedHostPort = minioPort,
+      exposedContainerPort = 9000,
+      waitStrategy = Wait.defaultWaitStrategy()
+    )
+  /*
+      .configure { c =>
+      c.withFileSystemBind("./target/data", "/data", BindMode.READ_WRITE)
+    }*/
 
   def system: ActorSystem
 
