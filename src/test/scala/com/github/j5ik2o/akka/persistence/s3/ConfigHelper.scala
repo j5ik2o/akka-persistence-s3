@@ -1,6 +1,5 @@
 package com.github.j5ik2o.akka.persistence.s3
 
-import com.github.j5ik2o.akka.persistence.s3.config.client.{ ClientType, ClientVersion }
 import com.github.j5ik2o.akka.persistence.s3.config.{ JournalPluginConfig, SnapshotPluginConfig }
 import com.github.j5ik2o.akka.persistence.s3.journal.S3Journal
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -11,9 +10,7 @@ object ConfigHelper {
       defaultResource: String,
       s3Port: Int,
       accessKeyId: String,
-      secretAccessKey: String,
-      clientVersion: ClientVersion.Value = ClientVersion.V2,
-      clientType: ClientType.Value = ClientType.Async
+      secretAccessKey: String
   ): Config = {
     val configString =
       s"""
