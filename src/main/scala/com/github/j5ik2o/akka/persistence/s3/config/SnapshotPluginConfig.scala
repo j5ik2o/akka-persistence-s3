@@ -5,7 +5,7 @@ import net.ceedubs.ficus.Ficus._
 
 object SnapshotPluginConfig {
 
-  val defaultBucketName = "j5ik2o.akka-persistence-s3"
+  val defaultBucketName = "j5ik2o.akka-persistence-s3-snapshot"
 
   def fromConfig(rootConfig: Config): SnapshotPluginConfig = {
     SnapshotPluginConfig(
@@ -22,7 +22,7 @@ object SnapshotPluginConfig {
 
 }
 
-case class SnapshotPluginConfig(
+final case class SnapshotPluginConfig(
     bucketName: Option[String],
     bucketNameResolverClassName: String,
     keyConverterClassName: String,

@@ -5,24 +5,14 @@ import akka.persistence.serialization.Snapshot
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
 import akka.serialization.{ Serialization, SerializationExtension }
+import com.github.j5ik2o.akka.persistence.s3.base.PersistenceId
 import com.github.j5ik2o.akka.persistence.s3.config.{ S3ClientConfig, SnapshotPluginConfig }
-import com.github.j5ik2o.akka.persistence.s3.resolver.{
-  BucketNameResolver,
-  KeyConverter,
-  PathPrefixResolver,
-  PersistenceId
-}
+import com.github.j5ik2o.akka.persistence.s3.resolver.{ BucketNameResolver, KeyConverter, PathPrefixResolver }
 import com.github.j5ik2o.akka.persistence.s3.utils.{ HttpClientBuilderUtils, S3ClientBuilderUtils }
 import com.github.j5ik2o.reactive.aws.s3.S3AsyncClient
 import com.typesafe.config.Config
 import software.amazon.awssdk.core.async.{ AsyncRequestBody, AsyncResponseTransformer }
-import software.amazon.awssdk.services.s3.model.{
-  DeleteObjectRequest,
-  GetObjectRequest,
-  ListObjectsRequest,
-  PutObjectRequest,
-  S3Object
-}
+import software.amazon.awssdk.services.s3.model._
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -78,7 +68,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
   private def resolveBucketName(snapshotMetadata: SnapshotMetadata) = {
     pluginConfig.bucketName
       .map(_.stripPrefix("/"))
-      .getOrElse(bucketNameResolver.resolve(snapshotMetadata.persistenceId))
+      .getOrElse(bucketNameResolver.resolve(PersistenceId(snapshotMetadata.persistenceId)))
   }
 
   private def convertToKey(snapshotMetadata: SnapshotMetadata) = {
@@ -172,37 +162,39 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
 
   private def load(
       metadata: immutable.Seq[SnapshotMetadata]
-  ): Future[Option[SelectedSnapshot]] = metadata.lastOption match {
-    case None => Future.successful(None)
-    case Some(snapshotMetadata) =>
-      val request = GetObjectRequest
-        .builder()
-        .bucket(resolveBucketName(snapshotMetadata))
-        .key(convertToKey(snapshotMetadata))
-        .build()
-      s3AsyncClient
-        .getObject(request, AsyncResponseTransformer.toBytes())
-        .map { responseBytes =>
-          if (responseBytes.response().sdkHttpResponse().isSuccessful) {
-            val snapshot = deserialize(responseBytes.asByteArray())
-            Some(SelectedSnapshot(snapshotMetadata, snapshot.data))
-          } else None
-        } recoverWith {
-        case NonFatal(e) =>
-          log.error(e, s"Error loading snapshot [${snapshotMetadata}]")
-          load(metadata.init) // try older snapshot
-      }
-  }
+  ): Future[Option[SelectedSnapshot]] =
+    metadata.lastOption match {
+      case None => Future.successful(None)
+      case Some(snapshotMetadata) =>
+        val request = GetObjectRequest
+          .builder()
+          .bucket(resolveBucketName(snapshotMetadata))
+          .key(convertToKey(snapshotMetadata))
+          .build()
+        s3AsyncClient
+          .getObject(request, AsyncResponseTransformer.toBytes())
+          .map { responseBytes =>
+            if (responseBytes.response().sdkHttpResponse().isSuccessful) {
+              val snapshot = deserialize(responseBytes.asByteArray())
+              Some(SelectedSnapshot(snapshotMetadata, snapshot.data))
+            } else None
+          } recoverWith {
+          case NonFatal(e) =>
+            log.error(e, s"Error loading snapshot [${snapshotMetadata}]")
+            load(metadata.init) // try older snapshot
+        }
+    }
 
   private def snapshotMetadatas(
       persistenceId: String,
       criteria: SnapshotSelectionCriteria
   ): Future[List[SnapshotMetadata]] = {
+    val pid = PersistenceId(persistenceId)
     var builder = ListObjectsRequest
       .builder()
-      .bucket(bucketNameResolver.resolve(persistenceId))
+      .bucket(bucketNameResolver.resolve(pid))
       .delimiter("/")
-    builder = resolvePathPrefix(persistenceId).fold(builder)(builder.prefix)
+    builder = resolvePathPrefix(pid).fold(builder)(builder.prefix)
     val request = builder.build()
     s3AsyncClient
       .listObjects(request)
