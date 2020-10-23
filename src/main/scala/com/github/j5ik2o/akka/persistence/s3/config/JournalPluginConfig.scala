@@ -13,7 +13,12 @@ object JournalPluginConfig {
     JournalPluginConfig(
       bucketName = rootConfig.getAs[String]("bucket-name"),
       bucketNameResolverClassName = rootConfig.as[String]("bucket-name-resolver-class-name"),
+      keyConverterClassName = rootConfig.as[String]("key-converter-class-name"),
+      pathPrefix = rootConfig.getAs[String]("path-prefix"),
+      pathPrefixResolverClassName = rootConfig.as[String]("path-prefix-resolver-class-name"),
+      extensionName = rootConfig.as[String]("extension-name"),
       tagSeparator = rootConfig.getOrElse[String](tagSeparatorKey, DefaultTagSeparator),
+      listObjectsBatchSize = rootConfig.as[Int]("list-objects-batch-size"),
       clientConfig = S3ClientConfig.fromConfig(rootConfig.getConfig("s3-client"))
     )
   }
@@ -21,6 +26,11 @@ object JournalPluginConfig {
 final case class JournalPluginConfig(
     bucketName: Option[String],
     bucketNameResolverClassName: String,
+    keyConverterClassName: String,
+    pathPrefix: Option[String],
+    pathPrefixResolverClassName: String,
+    extensionName: String,
     tagSeparator: String,
+    listObjectsBatchSize: Int,
     clientConfig: S3ClientConfig
 )
