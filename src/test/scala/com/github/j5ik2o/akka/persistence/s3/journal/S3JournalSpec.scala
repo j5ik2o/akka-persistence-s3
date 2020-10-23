@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.persistence.CapabilityFlag
 import akka.persistence.journal.JournalSpec
 import com.dimafeng.testcontainers.{ Container, ForEachTestContainer }
+import com.github.j5ik2o.akka.persistence.s3.ConfigHelper
 import com.github.j5ik2o.akka.persistence.s3.config.JournalPluginConfig
 import com.github.j5ik2o.akka.persistence.s3.util.{ RandomPortUtil, S3SpecSupport }
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }

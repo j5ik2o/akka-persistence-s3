@@ -7,7 +7,11 @@ import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionC
 import akka.serialization.{ Serialization, SerializationExtension }
 import com.github.j5ik2o.akka.persistence.s3.base.PersistenceId
 import com.github.j5ik2o.akka.persistence.s3.config.{ S3ClientConfig, SnapshotPluginConfig }
-import com.github.j5ik2o.akka.persistence.s3.resolver.{ BucketNameResolver, KeyConverter, PathPrefixResolver }
+import com.github.j5ik2o.akka.persistence.s3.resolver.{
+  BucketNameResolver,
+  PathPrefixResolver,
+  SnapshotMetadataKeyConverter
+}
 import com.github.j5ik2o.akka.persistence.s3.utils.{ HttpClientBuilderUtils, S3ClientBuilderUtils }
 import com.github.j5ik2o.reactive.aws.s3.S3AsyncClient
 import com.typesafe.config.Config
@@ -45,9 +49,9 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       .getOrElse(throw new ClassNotFoundException(bucketNameResolverClassName))
   }
 
-  protected val keyConverter: KeyConverter = {
+  protected val keyConverter: SnapshotMetadataKeyConverter = {
     dynamicAccess
-      .createInstanceFor[KeyConverter](keyConverterClassName, immutable.Seq(classOf[Config] -> config))
+      .createInstanceFor[SnapshotMetadataKeyConverter](keyConverterClassName, immutable.Seq(classOf[Config] -> config))
       .getOrElse(throw new ClassNotFoundException(keyConverterClassName))
   }
 

@@ -15,7 +15,7 @@ object PathPrefixResolver {
     override def resolve(
         persistenceId: com.github.j5ik2o.akka.persistence.s3.base.PersistenceId
     ): Option[String] = {
-      Some(persistenceId + "/")
+      Some(persistenceId.asString + "/")
     }
   }
 

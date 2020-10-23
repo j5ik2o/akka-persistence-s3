@@ -1,14 +1,11 @@
 package com.github.j5ik2o.akka.persistence.s3.journal
 
-import java.util.function.Consumer
-
 import akka.actor.{ ActorSystem, DynamicAccess, ExtendedActorSystem }
 import akka.persistence.journal.AsyncWriteJournal
 import akka.persistence.{ AtomicWrite, PersistentRepr }
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.stream.Attributes
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ Sink, Source }
 import com.github.j5ik2o.akka.persistence.s3.base.PersistenceId
 import com.github.j5ik2o.akka.persistence.s3.config.{ JournalPluginConfig, S3ClientConfig }
 import com.github.j5ik2o.akka.persistence.s3.resolver.BucketNameResolver
@@ -67,6 +64,7 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
     onFailure = Attributes.LogLevels.Error,
     onFinish = Attributes.LogLevels.Debug
   )
+
   override def asyncWriteMessages(atomicWrites: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
     val serializedTries = serializer.serialize(atomicWrites)
     val rowsToWrite = for {
@@ -220,33 +218,25 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
         s3AsyncClient
           .listObjectsV2(req)
       }
-      .mapConcat { res =>
-        if (res.hasContents)
-          Option(res.contents)
-            .map(_.asScala)
-            .map {
-              _.map { obj =>
+      .map { res =>
+        val s =
+          if (res.hasContents)
+            res.contents.asScala
+              .map { obj =>
                 val key    = obj.key()
                 val result = key.split("\\.")
                 val pid    = result(0)
                 val seqNr  = result(1).toLong
                 (key, pid, seqNr)
-              }.sortBy { e => e._1 }.toVector
-            }
-            .getOrElse(Vector.empty)
-        else
-          Vector.empty
-      }
-      .filter {
-        case (_, pid, seqNr) =>
-          pid == persistenceId && fromSeqNr <= seqNr
-      }
-      .fold(Vector.empty[(String, String, Long)])(_ :+ _)
-      .map { res =>
-        if (res.nonEmpty)
-          res.last._3
-        else
-          0
+              }
+              .filter {
+                case (_, pid, seqNr) =>
+                  pid == persistenceId && fromSeqNr <= seqNr
+              }
+              .toVector
+          else
+            Vector.empty
+        s.lastOption.fold(0L)(_._3)
       }
       .withAttributes(logLevels)
       .runWith(Sink.head)
