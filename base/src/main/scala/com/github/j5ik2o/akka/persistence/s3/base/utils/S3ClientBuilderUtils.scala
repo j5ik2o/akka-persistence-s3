@@ -1,4 +1,4 @@
-package com.github.j5ik2o.akka.persistence.s3.utils
+package com.github.j5ik2o.akka.persistence.s3.base.utils
 
 import java.net.URI
 

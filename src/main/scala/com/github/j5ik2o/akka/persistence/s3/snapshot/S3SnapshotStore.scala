@@ -7,13 +7,13 @@ import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionC
 import akka.serialization.{ Serialization, SerializationExtension }
 import com.github.j5ik2o.akka.persistence.s3.base.config.S3ClientConfig
 import com.github.j5ik2o.akka.persistence.s3.base.model.PersistenceId
+import com.github.j5ik2o.akka.persistence.s3.base.utils.{ HttpClientBuilderUtils, S3ClientBuilderUtils }
 import com.github.j5ik2o.akka.persistence.s3.config.SnapshotPluginConfig
 import com.github.j5ik2o.akka.persistence.s3.resolver.{
   PathPrefixResolver,
   SnapshotBucketNameResolver,
   SnapshotMetadataKeyConverter
 }
-import com.github.j5ik2o.akka.persistence.s3.utils.{ HttpClientBuilderUtils, S3ClientBuilderUtils }
 import com.github.j5ik2o.reactive.aws.s3.S3AsyncClient
 import com.typesafe.config.Config
 import software.amazon.awssdk.core.async.{ AsyncRequestBody, AsyncResponseTransformer }
