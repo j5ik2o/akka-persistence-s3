@@ -47,9 +47,10 @@ lazy val deploySettings = Seq(
 )
 
 val coreSettings = Seq(
-  scalaVersion := scala211Version,
+  organization := "com.github.j5ik2o",
+  scalaVersion := scala213Version,
   crossScalaVersions ++= Seq(scala211Version, scala212Version, scala213Version),
-  scalacOptions ++= {
+  scalacOptions ++=
     Seq(
       "-feature",
       "-deprecation",
@@ -58,22 +59,15 @@ val coreSettings = Seq(
       "UTF-8",
       "-language:_",
       "-target:jvm-1.8"
-    ) ++ {
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2L, scalaMajor)) if scalaMajor >= 12 =>
-          Seq.empty
-        case Some((2L, scalaMajor)) if scalaMajor <= 11 =>
-          Seq("-Yinline-warnings")
-      }
-    }
-  },
+    ) ++ crossScalacOptions(scalaVersion.value),
   resolvers ++= Seq(
       "Sonatype OSS Snapshot Repository" at "https://oss.sonatype.org/content/repositories/snapshots/",
       "Sonatype OSS Release Repository" at "https://oss.sonatype.org/content/repositories/releases/",
       "Seasar Repository" at "https://maven.seasar.org/maven2/",
       "jitpack" at "https://jitpack.io"
     ),
-  parallelExecution in Test := false
+  parallelExecution in Test := false,
+  scalafmtOnCompile in ThisBuild := true
 )
 
 lazy val base = (project in file("base"))
