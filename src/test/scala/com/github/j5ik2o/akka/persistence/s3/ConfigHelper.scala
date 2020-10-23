@@ -17,8 +17,6 @@ object ConfigHelper {
          |akka.persistence.journal.plugin = "j5ik2o.s3-journal"
          |akka.persistence.snapshot-store.plugin = "j5ik2o.s3-snapshot-store"
          |j5ik2o.s3-journal {
-         |  class = "${classOf[S3Journal].getName}"
-         |  bucket-name = "${JournalPluginConfig.defaultBucketName}"
          |  s3-client {
          |    access-key-id = "${accessKeyId}"
          |    secret-access-key = "${secretAccessKey}"
@@ -30,7 +28,6 @@ object ConfigHelper {
          |}
          |
          |j5ik2o.s3-snapshot-store {
-         |  bucket-name = "${SnapshotPluginConfig.defaultBucketName}"
          |  s3-client {
          |    access-key-id = "${accessKeyId}"
          |    secret-access-key = "${secretAccessKey}"

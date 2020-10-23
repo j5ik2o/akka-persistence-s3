@@ -5,9 +5,48 @@ val akka26Version              = "2.6.10"
 val akka25Version              = "2.5.32"
 val testcontainersScalaVersion = "0.38.4"
 
-val coreSettings = Seq(
+def crossScalacOptions(scalaVersion: String): Seq[String] =
+  CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2L, scalaMajor)) if scalaMajor >= 12 =>
+      Seq.empty
+    case Some((2L, scalaMajor)) if scalaMajor <= 11 =>
+      Seq("-Yinline-warnings")
+  }
+
+lazy val deploySettings = Seq(
   sonatypeProfileName := "com.github.j5ik2o",
-  organization := "com.github.j5ik2o",
+  publishMavenStyle := true,
+  publishArtifact in Test := false,
+  pomIncludeRepository := { _ => false },
+  pomExtra := {
+    <url>https://github.com/j5ik2o/akka-persistence-s3</url>
+      <licenses>
+        <license>
+          <name>Apache 2</name>
+          <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+      </licenses>
+      <scm>
+        <url>git@github.com:j5ik2o/akka-persistence-s3.git</url>
+        <connection>scm:git:github.com/j5ik2o/akka-persistence-s3</connection>
+        <developerConnection>scm:git:git@github.com:j5ik2o/akka-persistence-s3.git</developerConnection>
+      </scm>
+      <developers>
+        <developer>
+          <id>j5ik2o</id>
+          <name>Junichi Kato</name>
+        </developer>
+      </developers>
+  },
+  publishTo := sonatypePublishToBundle.value,
+  credentials := {
+    val ivyCredentials = (baseDirectory in LocalRootProject).value / ".credentials"
+    val gpgCredentials = (baseDirectory in LocalRootProject).value / ".gpgCredentials"
+    Credentials(ivyCredentials) :: Credentials(gpgCredentials) :: Nil
+  }
+)
+
+val coreSettings = Seq(
   scalaVersion := scala211Version,
   crossScalaVersions ++= Seq(scala211Version, scala212Version, scala213Version),
   scalacOptions ++= {
@@ -27,35 +66,6 @@ val coreSettings = Seq(
           Seq("-Yinline-warnings")
       }
     }
-  },
-  publishMavenStyle := true,
-  publishArtifact in Test := false,
-  pomIncludeRepository := { _ => false },
-  pomExtra := {
-    <url>https://github.com/j5ik2o/akka-persistence-s3</url>
-    <licenses>
-      <license>
-        <name>Apache 2</name>
-        <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-      </license>
-    </licenses>
-    <scm>
-      <url>git@github.com:j5ik2o/akka-persistence-s3.git</url>
-      <connection>scm:git:github.com/j5ik2o/akka-persistence-s3</connection>
-      <developerConnection>scm:git:git@github.com:j5ik2o/akka-persistence-s3.git</developerConnection>
-    </scm>
-    <developers>
-      <developer>
-        <id>j5ik2o</id>
-        <name>Junichi Kato</name>
-      </developer>
-    </developers>
-  },
-  publishTo := sonatypePublishToBundle.value,
-  credentials := {
-    val ivyCredentials = (baseDirectory in LocalRootProject).value / ".credentials"
-    val gpgCredentials = (baseDirectory in LocalRootProject).value / ".gpgCredentials"
-    Credentials(ivyCredentials) :: Credentials(gpgCredentials) :: Nil
   },
   resolvers ++= Seq(
       "Sonatype OSS Snapshot Repository" at "https://oss.sonatype.org/content/repositories/snapshots/",
@@ -112,9 +122,17 @@ val coreSettings = Seq(
 
 lazy val base = (project in file("base"))
   .settings(coreSettings)
+  .settings(deploySettings)
   .settings(name := "akka-persistence-s3-base")
+
+lazy val journal = (project in file("journal"))
+  .settings(coreSettings)
+  .settings(deploySettings)
+  .settings(name := "akka-persistence-s3-journal")
+  .dependsOn(base)
 
 lazy val `root` = (project in file("."))
   .settings(coreSettings)
+  .settings(deploySettings)
   .settings(name := "akka-persistence-s3")
   .dependsOn(base)

@@ -9,8 +9,8 @@ import com.github.j5ik2o.akka.persistence.s3.base.config.S3ClientConfig
 import com.github.j5ik2o.akka.persistence.s3.base.model.PersistenceId
 import com.github.j5ik2o.akka.persistence.s3.config.SnapshotPluginConfig
 import com.github.j5ik2o.akka.persistence.s3.resolver.{
-  BucketNameResolver,
   PathPrefixResolver,
+  SnapshotBucketNameResolver,
   SnapshotMetadataKeyConverter
 }
 import com.github.j5ik2o.akka.persistence.s3.utils.{ HttpClientBuilderUtils, S3ClientBuilderUtils }
@@ -44,9 +44,12 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
   private val extendedSystem: ExtendedActorSystem = system.asInstanceOf[ExtendedActorSystem]
   private val dynamicAccess: DynamicAccess        = extendedSystem.dynamicAccess
 
-  protected val bucketNameResolver: BucketNameResolver = {
+  protected val bucketNameResolver: SnapshotBucketNameResolver = {
     dynamicAccess
-      .createInstanceFor[BucketNameResolver](bucketNameResolverClassName, immutable.Seq(classOf[Config] -> config))
+      .createInstanceFor[SnapshotBucketNameResolver](
+        bucketNameResolverClassName,
+        immutable.Seq(classOf[Config] -> config)
+      )
       .getOrElse(throw new ClassNotFoundException(bucketNameResolverClassName))
   }
 

@@ -10,11 +10,12 @@ import com.github.j5ik2o.akka.persistence.s3.base.config.S3ClientConfig
 import com.github.j5ik2o.akka.persistence.s3.base.model.{ PersistenceId, SequenceNumber }
 import com.github.j5ik2o.akka.persistence.s3.config.JournalPluginConfig
 import com.github.j5ik2o.akka.persistence.s3.resolver.{
-  BucketNameResolver,
+  JournalBucketNameResolver,
   JournalMetadataKey,
   JournalMetadataKeyConverter,
   Key,
-  PathPrefixResolver
+  PathPrefixResolver,
+  SnapshotBucketNameResolver
 }
 import com.github.j5ik2o.akka.persistence.s3.serialization.{ ByteArrayJournalSerializer, FlowPersistentReprSerializer }
 import com.github.j5ik2o.akka.persistence.s3.utils.{ HttpClientBuilderUtils, S3ClientBuilderUtils }
@@ -56,9 +57,12 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
   private val extendedSystem: ExtendedActorSystem = system.asInstanceOf[ExtendedActorSystem]
   private val dynamicAccess: DynamicAccess        = extendedSystem.dynamicAccess
 
-  protected val bucketNameResolver: BucketNameResolver = {
+  protected val bucketNameResolver: JournalBucketNameResolver = {
     dynamicAccess
-      .createInstanceFor[BucketNameResolver](bucketNameResolverClassName, immutable.Seq(classOf[Config] -> config))
+      .createInstanceFor[JournalBucketNameResolver](
+        bucketNameResolverClassName,
+        immutable.Seq(classOf[Config] -> config)
+      )
       .getOrElse(throw new ClassNotFoundException(bucketNameResolverClassName))
   }
 
