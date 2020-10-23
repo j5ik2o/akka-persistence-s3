@@ -5,7 +5,7 @@ import com.typesafe.config.Config
 
 import scala.util.matching.Regex
 
-trait KeyConverter {
+trait SnapshotMetadataKeyConverter {
 
   def convertTo(snapshotMetadata: SnapshotMetadata, extensionName: String): Key
 
@@ -13,9 +13,9 @@ trait KeyConverter {
 
 }
 
-object KeyConverter {
+object SnapshotMetadataKeyConverter {
 
-  class PersistenceId(config: Config) extends KeyConverter {
+  class PersistenceId(config: Config) extends SnapshotMetadataKeyConverter {
     override def convertTo(snapshotMetadata: SnapshotMetadata, extensionName: String): Key =
       s"${snapshotMetadata.persistenceId}/${snapshotMetadata.sequenceNr.toString.reverse}-${snapshotMetadata.timestamp}.$extensionName"
 
@@ -23,9 +23,9 @@ object KeyConverter {
       val pattern: Regex = ("""^(.+)/(\d+)-(\d+)\.""" + extensionName + "$").r
       key match {
         case pattern(
-            persistenceId: String,
-            sequenceNr: String,
-            timestamp: String
+              persistenceId: String,
+              sequenceNr: String,
+              timestamp: String
             ) =>
           SnapshotMetadata(
             persistenceId,

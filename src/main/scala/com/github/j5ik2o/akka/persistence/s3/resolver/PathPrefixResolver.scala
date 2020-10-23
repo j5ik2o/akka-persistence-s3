@@ -1,5 +1,6 @@
 package com.github.j5ik2o.akka.persistence.s3.resolver
 
+import com.github.j5ik2o.akka.persistence.s3.base.PersistenceId
 import com.typesafe.config.Config
 
 trait PathPrefixResolver {
@@ -12,9 +13,9 @@ object PathPrefixResolver {
 
   class PersistenceId(config: Config) extends PathPrefixResolver {
     override def resolve(
-        persistenceId: com.github.j5ik2o.akka.persistence.s3.resolver.PersistenceId
+        persistenceId: com.github.j5ik2o.akka.persistence.s3.base.PersistenceId
     ): Option[String] = {
-      Some(persistenceId + "/")
+      Some(persistenceId.asString + "/")
     }
   }
 
