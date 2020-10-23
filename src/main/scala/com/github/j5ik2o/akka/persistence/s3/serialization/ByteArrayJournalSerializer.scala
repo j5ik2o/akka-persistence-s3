@@ -18,7 +18,7 @@ package com.github.j5ik2o.akka.persistence.s3.serialization
 
 import akka.persistence.PersistentRepr
 import akka.serialization.Serialization
-import com.github.j5ik2o.akka.persistence.s3.base.{ PersistenceId, SequenceNumber }
+import com.github.j5ik2o.akka.persistence.s3.base.model.{ PersistenceId, SequenceNumber }
 import com.github.j5ik2o.akka.persistence.s3.journal.JournalRow
 
 import scala.util.{ Failure, Success }

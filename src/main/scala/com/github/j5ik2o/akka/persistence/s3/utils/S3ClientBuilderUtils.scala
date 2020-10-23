@@ -2,7 +2,7 @@ package com.github.j5ik2o.akka.persistence.s3.utils
 
 import java.net.URI
 
-import com.github.j5ik2o.akka.persistence.s3.config.{ S3ClientConfig, S3ClientOptionsConfig }
+import com.github.j5ik2o.akka.persistence.s3.base.config.{ S3ClientConfig, S3ClientOptionsConfig }
 import software.amazon.awssdk.auth.credentials.{
   AwsBasicCredentials,
   StaticCredentialsProvider,

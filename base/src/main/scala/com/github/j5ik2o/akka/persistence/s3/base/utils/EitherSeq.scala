@@ -1,6 +1,6 @@
-package com.github.j5ik2o.akka.persistence.s3.base
+package com.github.j5ik2o.akka.persistence.s3.base.utils
 
-import scala.collection.immutable._
+import scala.collection.immutable.{ Seq, Vector }
 
 object EitherSeq {
 

@@ -18,7 +18,7 @@ package com.github.j5ik2o.akka.persistence.s3.serialization
 
 import akka.persistence.journal.Tagged
 import akka.persistence.{ AtomicWrite, PersistentRepr }
-import com.github.j5ik2o.akka.persistence.s3.base.EitherSeq
+import com.github.j5ik2o.akka.persistence.s3.base.utils.EitherSeq
 
 import scala.collection.immutable._
 

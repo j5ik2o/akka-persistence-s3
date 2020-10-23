@@ -2,7 +2,7 @@ package com.github.j5ik2o.akka.persistence.s3.utils
 
 import java.time.{ Duration => JavaDuration }
 
-import com.github.j5ik2o.akka.persistence.s3.config.S3ClientConfig
+import com.github.j5ik2o.akka.persistence.s3.base.config.S3ClientConfig
 import software.amazon.awssdk.http.Protocol
 import software.amazon.awssdk.http.nio.netty.{ Http2Configuration, NettyNioAsyncHttpClient, SdkEventLoopGroup }
 

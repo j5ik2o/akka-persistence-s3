@@ -1,4 +1,4 @@
-package com.github.j5ik2o.akka.persistence.s3.base
+package com.github.j5ik2o.akka.persistence.s3.base.model
 
 final class PersistenceId(private val value: String) {
   require(value.length >= 1 && value.length <= 2048, "Invalid string length")

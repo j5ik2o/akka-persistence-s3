@@ -1,6 +1,6 @@
 package com.github.j5ik2o.akka.persistence.s3.resolver
 
-import com.github.j5ik2o.akka.persistence.s3.base.PersistenceId
+import com.github.j5ik2o.akka.persistence.s3.base.model.PersistenceId
 import com.github.j5ik2o.akka.persistence.s3.config.SnapshotPluginConfig
 import com.typesafe.config.Config
 
@@ -14,7 +14,7 @@ object BucketNameResolver {
 
   class PersistenceId(config: Config) extends BucketNameResolver {
     override def resolve(
-        persistenceId: com.github.j5ik2o.akka.persistence.s3.base.PersistenceId
+        persistenceId: com.github.j5ik2o.akka.persistence.s3.base.model.PersistenceId
     ): String = SnapshotPluginConfig.defaultBucketName
   }
 

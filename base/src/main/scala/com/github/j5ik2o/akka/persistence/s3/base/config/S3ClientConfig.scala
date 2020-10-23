@@ -1,4 +1,4 @@
-package com.github.j5ik2o.akka.persistence.s3.config
+package com.github.j5ik2o.akka.persistence.s3.base.config
 
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._

@@ -1,6 +1,6 @@
 package com.github.j5ik2o.akka.persistence.s3.journal
 
-import com.github.j5ik2o.akka.persistence.s3.base.{ PersistenceId, SequenceNumber }
+import com.github.j5ik2o.akka.persistence.s3.base.model.{ PersistenceId, SequenceNumber }
 
 case class JournalRow(
     persistenceId: PersistenceId,

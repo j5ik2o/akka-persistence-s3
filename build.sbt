@@ -110,6 +110,11 @@ val coreSettings = Seq(
   parallelExecution in Test := false
 )
 
+lazy val base = (project in file("base"))
+  .settings(coreSettings)
+  .settings(name := "akka-persistence-s3-base")
+
 lazy val `root` = (project in file("."))
   .settings(coreSettings)
   .settings(name := "akka-persistence-s3")
+  .dependsOn(base)

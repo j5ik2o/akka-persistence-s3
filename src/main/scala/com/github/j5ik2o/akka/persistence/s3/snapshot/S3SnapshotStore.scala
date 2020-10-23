@@ -5,8 +5,9 @@ import akka.persistence.serialization.Snapshot
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
 import akka.serialization.{ Serialization, SerializationExtension }
-import com.github.j5ik2o.akka.persistence.s3.base.PersistenceId
-import com.github.j5ik2o.akka.persistence.s3.config.{ S3ClientConfig, SnapshotPluginConfig }
+import com.github.j5ik2o.akka.persistence.s3.base.config.S3ClientConfig
+import com.github.j5ik2o.akka.persistence.s3.base.model.PersistenceId
+import com.github.j5ik2o.akka.persistence.s3.config.SnapshotPluginConfig
 import com.github.j5ik2o.akka.persistence.s3.resolver.{
   BucketNameResolver,
   PathPrefixResolver,

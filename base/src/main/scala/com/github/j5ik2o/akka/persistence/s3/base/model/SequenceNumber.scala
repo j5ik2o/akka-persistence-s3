@@ -1,4 +1,4 @@
-package com.github.j5ik2o.akka.persistence.s3.base
+package com.github.j5ik2o.akka.persistence.s3.base.model
 
 object SequenceNumber {
   val MaxValue = SequenceNumber(Long.MaxValue)

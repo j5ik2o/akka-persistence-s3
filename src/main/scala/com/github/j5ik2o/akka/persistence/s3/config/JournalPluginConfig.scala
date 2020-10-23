@@ -1,5 +1,6 @@
 package com.github.j5ik2o.akka.persistence.s3.config
 
+import com.github.j5ik2o.akka.persistence.s3.base.config.S3ClientConfig
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._
 
