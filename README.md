@@ -24,7 +24,8 @@ resolvers += "Sonatype OSS Release Repository" at "https://oss.sonatype.org/cont
 val version = "..."
 
 libraryDependencies += Seq(
-  "com.github.j5ik2o" %% "akka-persistence-s3" % version
+  "com.github.j5ik2o" %% "akka-persistence-s3-journal" % version,
+  "com.github.j5ik2o" %% "akka-persistence-s3-snapshot" % version
 )
 ```
 
