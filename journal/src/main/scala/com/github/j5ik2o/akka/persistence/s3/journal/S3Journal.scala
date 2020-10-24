@@ -125,28 +125,30 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
           case Right(_) => Right(())
           case Left(ex) => Left(ex)
         }
+    def putObject(journalRow: JournalRow): Future[PutObjectResponse] = {
+      val key = resolveKey(journalRow.persistenceId, journalRow.sequenceNumber)
+      val req = PutObjectRequest
+        .builder()
+        .bucket(resolveBucketName(journalRow.persistenceId))
+        .key(key)
+        .build()
+      s3AsyncClient.putObject(req, new ByteArrayAsyncRequestBody(journalRow.message)).flatMap { res =>
+        if (res.sdkHttpResponse().isSuccessful)
+          Future.successful(res)
+        else
+          Future.failed(
+            new S3JournalException(
+              s"Failed to putObject: statusCode = ${res.sdkHttpResponse.statusCode()}"
+            )
+          )
+      }
+    }
     val future = rowsToWrite
       .foldLeft(Future.successful(Vector.empty[PutObjectResponse])) {
         case (result, journalRow) =>
-          val key = resolveKey(journalRow.persistenceId, journalRow.sequenceNumber)
-          val req = PutObjectRequest
-            .builder()
-            .bucket(resolveBucketName(journalRow.persistenceId))
-            .key(key)
-            .build()
           for {
             r <- result
-            e <- s3AsyncClient.putObject(req, new ByteArrayAsyncRequestBody(journalRow.message))
-            _ <- {
-              if (e.sdkHttpResponse().isSuccessful)
-                Future.successful(())
-              else
-                Future.failed(
-                  new S3JournalException(
-                    s"Failed to putObject: statusCode = ${e.sdkHttpResponse.statusCode()}"
-                  )
-                )
-            }
+            e <- putObject(journalRow)
           } yield r :+ e
       }
       .map { _ =>
@@ -159,6 +161,37 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
   }
 
   override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] = {
+    def deleteObject(pid: PersistenceId, obj: S3Object): Future[DeleteObjectResponse] = {
+      val req = DeleteObjectRequest.builder().bucket(resolveBucketName(pid)).key(obj.key()).build()
+      s3AsyncClient.deleteObject(req).flatMap { res =>
+        if (res.sdkHttpResponse().isSuccessful)
+          Future.successful(res)
+        else
+          Future.failed(
+            new S3JournalException(
+              s"Failed to deleteObject: statusCode = ${res.sdkHttpResponse.statusCode()}"
+            )
+          )
+      }
+    }
+    def copyObject(pid: PersistenceId, obj: S3Object, seqNr: Long): Future[CopyObjectResponse] = {
+      val req = CopyObjectRequest
+        .builder()
+        .copySource(resolveBucketName(pid) + "/" + obj.key())
+        .destinationBucket(resolveBucketName(pid))
+        .destinationKey(resolveKey(pid, SequenceNumber(seqNr), deleted = true))
+        .build()
+      s3AsyncClient.copyObject(req).flatMap { res =>
+        if (res.sdkHttpResponse().isSuccessful) {
+          Future.successful(res)
+        } else
+          Future.failed(
+            new S3JournalException(
+              s"Failed to copyObject: statusCode = ${res.sdkHttpResponse.statusCode()}"
+            )
+          )
+      }
+    }
     val pid = PersistenceId(persistenceId)
     listObjectsSource(pid, listObjectsBatchSize)
       .log("list-objects")
@@ -178,32 +211,10 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
       }
       .mapAsync(1) {
         case (obj, persistenceId, seqNr) =>
-          val req = CopyObjectRequest
-            .builder()
-            .copySource(resolveBucketName(pid) + "/" + obj.key())
-            .destinationBucket(resolveBucketName(pid))
-            .destinationKey(resolveKey(pid, SequenceNumber(seqNr), deleted = true))
-            .build()
-          s3AsyncClient.copyObject(req).flatMap { res =>
-            if (res.sdkHttpResponse().isSuccessful) {
-              val req = DeleteObjectRequest.builder().bucket(resolveBucketName(pid)).key(obj.key()).build()
-              s3AsyncClient.deleteObject(req).flatMap { res =>
-                if (res.sdkHttpResponse().isSuccessful)
-                  Future.successful(res)
-                else
-                  Future.failed(
-                    new S3JournalException(
-                      s"Failed to deleteObject: statusCode = ${res.sdkHttpResponse.statusCode()}"
-                    )
-                  )
-              }
-            } else
-              Future.failed(
-                new S3JournalException(
-                  s"Failed to copyObject: statusCode = ${res.sdkHttpResponse.statusCode()}"
-                )
-              )
-          }
+          for {
+            _   <- copyObject(pid, obj, seqNr)
+            res <- deleteObject(pid, obj)
+          } yield res
       }
       .withAttributes(logLevels)
       .runWith(Sink.ignore)
@@ -214,6 +225,23 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
       recoveryCallback: PersistentRepr => Unit
   ): Future[Unit] = {
+    def getObject(pid: PersistenceId, key: Key) = {
+      val req = GetObjectRequest
+        .builder()
+        .bucket(resolveBucketName(pid))
+        .key(key)
+        .build()
+      s3AsyncClient.getObjectAsBytes(req).flatMap { result =>
+        if (result.response().sdkHttpResponse().isSuccessful)
+          Future.successful(result.asByteArray())
+        else
+          Future.failed(
+            new S3JournalException(
+              s"Failed to getObjectAsBytes: statusCode = ${result.response().sdkHttpResponse.statusCode()}"
+            )
+          )
+      }
+    }
     val fromSeqNr = Math.max(1, fromSequenceNr)
     val s =
       if (max == 0 || fromSeqNr > toSequenceNr)
@@ -241,22 +269,7 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
           }
           .log("element")
           .mapAsync(1) {
-            case (key, _, _, _) =>
-              val req = GetObjectRequest
-                .builder()
-                .bucket(resolveBucketName(pid))
-                .key(key)
-                .build()
-              s3AsyncClient.getObjectAsBytes(req).flatMap { result =>
-                if (result.response().sdkHttpResponse().isSuccessful)
-                  Future.successful(result.asByteArray())
-                else
-                  Future.failed(
-                    new S3JournalException(
-                      s"Failed to getObjectAsBytes: statusCode = ${result.response().sdkHttpResponse.statusCode()}"
-                    )
-                  )
-              }
+            case (key, _, _, _) => getObject(pid, key)
           }
           .map { bytes =>
             serialization
