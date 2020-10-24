@@ -114,33 +114,6 @@ lazy val base = (project in file("base"))
     }
   )
 
-lazy val journal = (project in file("journal"))
-  .settings(coreSettings)
-  .settings(deploySettings)
-  .settings(
-    name := "akka-persistence-s3-journal",
-    libraryDependencies ++= {
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2L, scalaMajor)) if scalaMajor == 13 =>
-          Seq(
-            "com.typesafe.akka" %% "akka-persistence"     % akka26Version,
-            "com.typesafe.akka" %% "akka-persistence-tck" % akka26Version % Test
-          )
-        case Some((2L, scalaMajor)) if scalaMajor == 12 =>
-          Seq(
-            "com.typesafe.akka" %% "akka-persistence"     % akka26Version,
-            "com.typesafe.akka" %% "akka-persistence-tck" % akka26Version % Test
-          )
-        case Some((2L, scalaMajor)) if scalaMajor == 11 =>
-          Seq(
-            "com.typesafe.akka" %% "akka-persistence"     % akka25Version,
-            "com.typesafe.akka" %% "akka-persistence-tck" % akka25Version % Test
-          )
-      }
-    }
-  )
-  .dependsOn(base % "test->test;compile->compile")
-
 lazy val snapshot = (project in file("snapshot"))
   .settings(coreSettings)
   .settings(deploySettings)
@@ -167,6 +140,33 @@ lazy val snapshot = (project in file("snapshot"))
     }
   )
   .dependsOn(base % "test->test;compile->compile")
+
+lazy val journal = (project in file("journal"))
+  .settings(coreSettings)
+  .settings(deploySettings)
+  .settings(
+    name := "akka-persistence-s3-journal",
+    libraryDependencies ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2L, scalaMajor)) if scalaMajor == 13 =>
+          Seq(
+            "com.typesafe.akka" %% "akka-persistence"     % akka26Version,
+            "com.typesafe.akka" %% "akka-persistence-tck" % akka26Version % Test
+          )
+        case Some((2L, scalaMajor)) if scalaMajor == 12 =>
+          Seq(
+            "com.typesafe.akka" %% "akka-persistence"     % akka26Version,
+            "com.typesafe.akka" %% "akka-persistence-tck" % akka26Version % Test
+          )
+        case Some((2L, scalaMajor)) if scalaMajor == 11 =>
+          Seq(
+            "com.typesafe.akka" %% "akka-persistence"     % akka25Version,
+            "com.typesafe.akka" %% "akka-persistence-tck" % akka25Version % Test
+          )
+      }
+    }
+  )
+  .dependsOn(base % "test->test;compile->compile", snapshot % "test->comple")
 
 lazy val root = (project in file("."))
   .settings(coreSettings)
