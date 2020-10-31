@@ -80,7 +80,7 @@ lazy val base = (project in file("base"))
         "com.iheart"        %% "ficus"                           % "1.5.0",
         "org.slf4j"          % "slf4j-api"                       % "1.7.30",
         "com.github.j5ik2o" %% "reactive-aws-s3-core"            % "1.2.6",
-        "org.scalacheck"    %% "scalacheck"                      % "1.14.3"                   % Test,
+        "org.scalacheck"    %% "scalacheck"                      % "1.15.0"                   % Test,
         "ch.qos.logback"     % "logback-classic"                 % "1.2.3"                    % Test,
         "com.dimafeng"      %% "testcontainers-scala-scalatest"  % testcontainersScalaVersion % Test,
         "com.dimafeng"      %% "testcontainers-scala-localstack" % testcontainersScalaVersion % Test
