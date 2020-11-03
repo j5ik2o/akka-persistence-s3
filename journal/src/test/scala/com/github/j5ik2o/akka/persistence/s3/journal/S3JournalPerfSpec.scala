@@ -42,7 +42,7 @@ class S3JournalPerfSpec
 
   override protected def minioPort: Int = S3JournalSpec.minioPort
 
-  override protected def s3BucketName(system: ActorSystem): String = S3JournalSpec.bucketName
+  override protected def s3BucketName: String = S3JournalSpec.bucketName
 
   override def container: Container = minioContainer
 

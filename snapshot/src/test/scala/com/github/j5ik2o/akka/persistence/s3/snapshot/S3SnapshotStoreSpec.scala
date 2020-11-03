@@ -37,7 +37,7 @@ class S3SnapshotStoreSpec
 
   override protected def minioPort: Int = S3SnapshotStoreSpec.minioPort
 
-  override protected def s3BucketName(system: ActorSystem): String = S3SnapshotStoreSpec.bucketName
+  override protected def s3BucketName: String = S3SnapshotStoreSpec.bucketName
 
   override def container: Container = minioContainer
 

@@ -1,6 +1,5 @@
 package com.github.j5ik2o.akka.persistence.s3.journal
 
-import akka.actor.ActorSystem
 import akka.persistence.CapabilityFlag
 import akka.persistence.journal.JournalSpec
 import com.dimafeng.testcontainers.{ Container, ForEachTestContainer }
@@ -38,7 +37,7 @@ class S3JournalSpec
 
   override protected def minioPort: Int = S3JournalSpec.minioPort
 
-  override protected def s3BucketName(system: ActorSystem): String = S3JournalSpec.bucketName
+  override protected def s3BucketName: String = S3JournalSpec.bucketName
 
   override def container: Container = minioContainer
 

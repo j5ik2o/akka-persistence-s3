@@ -69,6 +69,17 @@ val coreSettings = Seq(
   parallelExecution in Test := false,
   scalafmtOnCompile in ThisBuild := true
 )
+lazy val test = (project in file("test"))
+  .settings(coreSettings)
+  .settings(deploySettings)
+  .settings(
+    name := "akka-persistence-s3-test",
+    libraryDependencies ++= Seq(
+        "com.typesafe"       % "config"               % "1.4.1",
+        "com.github.j5ik2o" %% "reactive-aws-s3-core" % "1.2.6",
+        "com.dimafeng"      %% "testcontainers-scala" % testcontainersScalaVersion
+      )
+  )
 
 lazy val base = (project in file("base"))
   .settings(coreSettings)
@@ -113,6 +124,7 @@ lazy val base = (project in file("base"))
       }
     }
   )
+  .dependsOn(test % "test->test")
 
 lazy val snapshot = (project in file("snapshot"))
   .settings(coreSettings)
@@ -172,6 +184,7 @@ lazy val root = (project in file("."))
   .settings(coreSettings)
   .settings(deploySettings)
   .settings(
+    name := "akka-persistence-s3-root",
     skip in publish := true
   )
   .aggregate(base, journal, snapshot)
