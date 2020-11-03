@@ -17,10 +17,11 @@ object S3JournalSpec {
 class S3JournalSpec
     extends JournalSpec(
       ConfigHelper.config(
-        "journal-reference",
+        Some("journal-reference"),
         S3JournalSpec.minioPort,
         S3JournalSpec.accessKeyId,
-        S3JournalSpec.secretAccessKey
+        S3JournalSpec.secretAccessKey,
+        None
       )
     )
     with ScalaFutures
@@ -45,7 +46,7 @@ class S3JournalSpec
     super.afterStart()
     import system.dispatcher
     eventually {
-      createS3Bucket().futureValue
+      createS3Bucket()
     }
   }
 

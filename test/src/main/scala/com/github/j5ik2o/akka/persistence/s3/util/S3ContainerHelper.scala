@@ -8,6 +8,7 @@ import org.testcontainers.containers.wait.strategy.Wait
 import software.amazon.awssdk.auth.credentials.{ AwsBasicCredentials, StaticCredentialsProvider }
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest
 import software.amazon.awssdk.services.s3.{ S3AsyncClient => JavaS3AsyncClient }
+import software.amazon.awssdk.services.s3.{ S3Client => JavaS3SyncClient }
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.jdk.CollectionConverters._
@@ -34,42 +35,34 @@ trait S3ContainerHelper {
       c.withFileSystemBind("./target/data", "/data", BindMode.READ_WRITE)
     }*/
 
-  private lazy val javaS3Client: JavaS3AsyncClient =
-    JavaS3AsyncClient
-      .builder()
-      .credentialsProvider(
-        StaticCredentialsProvider
-          .create(AwsBasicCredentials.create(minioAccessKeyId, minioSecretAccessKey))
-      )
-      .endpointOverride(URI.create(s"http://127.0.0.1:${minioPort}"))
-      .build()
+  lazy val javaS3SyncClient = JavaS3SyncClient
+    .builder()
+    .credentialsProvider(
+      StaticCredentialsProvider
+        .create(AwsBasicCredentials.create(minioAccessKeyId, minioSecretAccessKey))
+    )
+    .endpointOverride(URI.create(s"http://127.0.0.1:${minioPort}"))
+    .build()
+
+  private lazy val javaS3Client: JavaS3AsyncClient = JavaS3AsyncClient
+    .builder()
+    .credentialsProvider(
+      StaticCredentialsProvider
+        .create(AwsBasicCredentials.create(minioAccessKeyId, minioSecretAccessKey))
+    )
+    .endpointOverride(URI.create(s"http://127.0.0.1:${minioPort}"))
+    .build()
 
   protected def s3BucketName: String
 
-  protected lazy val s3Client: S3AsyncClient = S3AsyncClient(javaS3Client)
-
-  protected def createS3Bucket()(implicit ec: ExecutionContext): Future[Unit] = {
-    s3Client
-      .listBuckets()
-      .flatMap { list =>
-        if (
-          list
-            .buckets()
-            .asScala
-            .exists(
-              _.name() == s3BucketName
-            )
-        )
-          Future.successful(())
-        else
-          s3Client
-            .createBucket(
-              CreateBucketRequest
-                .builder()
-                .bucket(s3BucketName)
-                .build()
-            )
-            .map(_ => ())
-      }
+  protected def createS3Bucket(): Unit = {
+    if (!javaS3SyncClient.listBuckets().buckets().asScala.exists(_.name() == s3BucketName)) {
+      javaS3SyncClient.createBucket(
+        CreateBucketRequest
+          .builder()
+          .bucket(s3BucketName)
+          .build()
+      )
+    }
   }
 }
