@@ -18,10 +18,11 @@ object S3SnapshotStoreSpec {
 class S3SnapshotStoreSpec
     extends SnapshotStoreSpec(
       ConfigHelper.config(
-        "snapshot-reference",
+        Some("snapshot-reference"),
         S3SnapshotStoreSpec.minioPort,
         S3SnapshotStoreSpec.accessKeyId,
-        S3SnapshotStoreSpec.secretAccessKey
+        S3SnapshotStoreSpec.secretAccessKey,
+        None
       )
     )
     with S3SpecSupport
@@ -37,7 +38,7 @@ class S3SnapshotStoreSpec
 
   override protected def minioPort: Int = S3SnapshotStoreSpec.minioPort
 
-  override protected def s3BucketName(system: ActorSystem): String = S3SnapshotStoreSpec.bucketName
+  override protected def s3BucketName: String = S3SnapshotStoreSpec.bucketName
 
   override def container: Container = minioContainer
 
@@ -45,7 +46,7 @@ class S3SnapshotStoreSpec
     super.afterStart()
     import system.dispatcher
     eventually {
-      createS3Bucket().futureValue
+      createS3Bucket()
     }
   }
 

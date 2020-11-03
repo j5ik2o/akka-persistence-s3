@@ -5,16 +5,18 @@ import com.typesafe.config.{ Config, ConfigFactory }
 object ConfigHelper {
 
   def config(
-      defaultResource: String,
+      defaultResource: Option[String],
       s3Port: Int,
       accessKeyId: String,
-      secretAccessKey: String
+      secretAccessKey: String,
+      bucketName: Option[String]
   ): Config = {
     val configString =
       s"""
          |akka.persistence.journal.plugin = "j5ik2o.s3-journal"
          |akka.persistence.snapshot-store.plugin = "j5ik2o.s3-snapshot-store"
          |j5ik2o.s3-journal {
+         |  ${if (bucketName.isEmpty) "" else s"""bucket-name = "${bucketName}""""}
          |  s3-client {
          |    access-key-id = "${accessKeyId}"
          |    secret-access-key = "${secretAccessKey}"
@@ -26,6 +28,7 @@ object ConfigHelper {
          |}
          |
          |j5ik2o.s3-snapshot-store {
+         |  ${if (bucketName.isEmpty) "" else s"""bucket-name = "${bucketName}""""}
          |  s3-client {
          |    access-key-id = "${accessKeyId}"
          |    secret-access-key = "${secretAccessKey}"
@@ -40,7 +43,9 @@ object ConfigHelper {
       .parseString(
         configString
       )
-      .withFallback(ConfigFactory.load(defaultResource))
+      .withFallback(
+        defaultResource.fold(ConfigFactory.load())(ConfigFactory.load)
+      )
     // println(ConfigRenderUtils.renderConfigToString(config))
     config
   }
