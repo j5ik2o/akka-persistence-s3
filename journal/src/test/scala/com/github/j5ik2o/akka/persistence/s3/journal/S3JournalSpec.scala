@@ -45,7 +45,6 @@ class S3JournalSpec
 
   override def afterStart(): Unit = {
     super.afterStart()
-    import system.dispatcher
     eventually {
       createS3Bucket()
     }
