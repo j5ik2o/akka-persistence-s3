@@ -6,6 +6,7 @@ object ConfigHelper {
 
   def config(
       defaultResource: Option[String],
+      testTimeFactor: Double,
       s3Port: Int,
       accessKeyId: String,
       secretAccessKey: String,
@@ -13,6 +14,7 @@ object ConfigHelper {
   ): Config = {
     val configString =
       s"""
+         |akka.test.timeFactor = $testTimeFactor
          |akka.persistence.journal.plugin = "j5ik2o.s3-journal"
          |akka.persistence.snapshot-store.plugin = "j5ik2o.s3-snapshot-store"
          |j5ik2o.s3-journal {

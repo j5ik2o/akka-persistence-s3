@@ -21,7 +21,14 @@ trait BenchmarkHelper extends S3ContainerHelper {
     minioContainer.start()
     Thread.sleep(1000)
     val config =
-      ConfigHelper.config(None, minioPort, minioAccessKeyId, minioSecretAccessKey, Some(s3BucketName))
+      ConfigHelper.config(
+        None,
+        testTimeFactor = 1.0,
+        s3Port = minioPort,
+        accessKeyId = minioAccessKeyId,
+        secretAccessKey = minioSecretAccessKey,
+        bucketName = Some(s3BucketName)
+      )
     createS3Bucket()
     system = ActorSystem("benchmark-" + UUID.randomUUID().toString, config)
 

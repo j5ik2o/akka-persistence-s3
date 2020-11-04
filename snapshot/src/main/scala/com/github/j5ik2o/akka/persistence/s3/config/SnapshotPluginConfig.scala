@@ -1,12 +1,18 @@
 package com.github.j5ik2o.akka.persistence.s3.config
 
-import com.github.j5ik2o.akka.persistence.s3.base.config.S3ClientConfig
+import com.github.j5ik2o.akka.persistence.s3.base.config.{ PluginConfig, S3ClientConfig }
+import com.github.j5ik2o.akka.persistence.s3.base.metrics.{ MetricsReporter, MetricsReporterProvider }
+import com.github.j5ik2o.akka.persistence.s3.base.utils.ClassCheckUtils
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._
 
 object SnapshotPluginConfig {
 
-  val defaultBucketName = "j5ik2o.akka-persistence-s3-snapshot"
+  val defaultBucketName                               = "j5ik2o.akka-persistence-s3-snapshot"
+  val metricsReporterClassNameKey                     = "metrics-reporter-class-name"
+  val metricsReporterProviderClassNameKey             = "metrics-reporter-provider-class-name"
+  val DefaultMetricsReporterClassName: String         = classOf[MetricsReporter.None].getName
+  val DefaultMetricsReporterProviderClassName: String = classOf[MetricsReporterProvider.Default].getName
 
   def fromConfig(rootConfig: Config): SnapshotPluginConfig = {
     SnapshotPluginConfig(
@@ -17,6 +23,15 @@ object SnapshotPluginConfig {
       pathPrefixResolverClassName = rootConfig.as[String]("path-prefix-resolver-class-name"),
       extensionName = rootConfig.as[String]("extension-name"),
       maxLoadAttempts = rootConfig.as[Int]("max-load-attempts"),
+      metricsReporterClassName = {
+        val className = rootConfig.getAs[String](metricsReporterClassNameKey)
+        ClassCheckUtils.requireClass(classOf[MetricsReporter], className)
+      },
+      metricsReporterProviderClassName = {
+        val className =
+          rootConfig.getOrElse[String](metricsReporterProviderClassNameKey, DefaultMetricsReporterProviderClassName)
+        ClassCheckUtils.requireClass(classOf[MetricsReporterProvider], className)
+      },
       clientConfig = S3ClientConfig.fromConfig(rootConfig.getConfig("s3-client"))
     )
   }
@@ -31,5 +46,7 @@ final case class SnapshotPluginConfig(
     pathPrefixResolverClassName: String,
     extensionName: String,
     maxLoadAttempts: Int,
+    metricsReporterProviderClassName: String,
+    metricsReporterClassName: Option[String],
     clientConfig: S3ClientConfig
-)
+) extends PluginConfig

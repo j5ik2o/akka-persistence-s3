@@ -1,11 +1,14 @@
 package com.github.j5ik2o.akka.persistence.s3.snapshot
 
+import java.util.UUID
+
 import akka.actor.{ ActorSystem, DynamicAccess, ExtendedActorSystem }
 import akka.persistence.serialization.Snapshot
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
 import akka.serialization.{ Serialization, SerializationExtension }
 import com.github.j5ik2o.akka.persistence.s3.base.config.S3ClientConfig
+import com.github.j5ik2o.akka.persistence.s3.base.metrics.{ MetricsReporter, MetricsReporterProvider }
 import com.github.j5ik2o.akka.persistence.s3.base.model.PersistenceId
 import com.github.j5ik2o.akka.persistence.s3.base.resolver.PathPrefixResolver
 import com.github.j5ik2o.akka.persistence.s3.base.utils.{ HttpClientBuilderUtils, S3ClientBuilderUtils }
@@ -20,6 +23,7 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 import scala.util.control.NonFatal
+import scala.util.{ Failure, Success }
 
 class S3SnapshotStore(config: Config) extends SnapshotStore {
   implicit val system: ActorSystem = context.system
@@ -40,6 +44,11 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
 
   private val extendedSystem: ExtendedActorSystem = system.asInstanceOf[ExtendedActorSystem]
   private val dynamicAccess: DynamicAccess        = extendedSystem.dynamicAccess
+
+  protected val metricsReporter: Option[MetricsReporter] = {
+    val metricsReporterProvider = MetricsReporterProvider.create(dynamicAccess, pluginConfig)
+    metricsReporterProvider.create
+  }
 
   protected val bucketNameResolver: SnapshotBucketNameResolver = {
     dynamicAccess
@@ -84,34 +93,68 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     keyConverter.convertFrom(s.key(), extensionName)
   }
 
-  protected def deserialize(bytes: Array[Byte]): Snapshot =
-    serialization
+  protected def deserialize(metadata: SnapshotMetadata, bytes: Array[Byte]): Snapshot = {
+    val context    = MetricsReporter.newContext(UUID.randomUUID(), PersistenceId(metadata.persistenceId))
+    val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreDeserializeSnapshot(context))
+    try serialization
       .deserialize(bytes, classOf[Snapshot])
       .get
+    catch {
+      case ex: Throwable =>
+        metricsReporter.foreach(_.errorSnapshotStoreDeserializeSnapshot(newContext, ex))
+        throw ex
+    } finally {
+      metricsReporter.foreach(_.afterSnapshotStoreDeserializeSnapshot(newContext))
+    }
+  }
 
-  private def serialize(snapshot: Snapshot): (Array[Byte], Int) = {
+  private def serialize(metadata: SnapshotMetadata, snapshot: Snapshot): (Array[Byte], Int) = {
+    val pid        = PersistenceId(metadata.persistenceId)
+    val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
+    val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreSerializeSnapshot(context))
     val serialized =
-      serialization.findSerializerFor(snapshot).toBinary(snapshot)
+      try serialization.findSerializerFor(snapshot).toBinary(snapshot)
+      catch {
+        case ex: Throwable =>
+          metricsReporter.foreach(_.errorSnapshotStoreSerializeSnapshot(newContext, ex))
+          throw ex
+      } finally {
+        metricsReporter.foreach(_.afterSnapshotStoreSerializeSnapshot(newContext))
+      }
     (serialized, serialized.length)
   }
 
   override def loadAsync(
       persistenceId: String,
       criteria: SnapshotSelectionCriteria
-  ): Future[Option[SelectedSnapshot]] =
-    snapshotMetadatas(persistenceId, criteria)
+  ): Future[Option[SelectedSnapshot]] = {
+    val pid        = PersistenceId(persistenceId)
+    val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
+    val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreLoadAsync(context))
+    val future = snapshotMetadatas(persistenceId, criteria)
       .map(_.sorted.takeRight(maxLoadAttempts))
       .flatMap(load)
+    future.onComplete {
+      case Success(_) =>
+        metricsReporter.foreach(_.afterSnapshotStoreLoadAsync(newContext))
+      case Failure(ex) =>
+        metricsReporter.foreach(_.errorSnapshotStoreLoadAsync(newContext, ex))
+    }
+    future
+  }
 
   override def saveAsync(snapshotMetadata: SnapshotMetadata, snapshot: Any): Future[Unit] = {
-    val (byteArray, size) = serialize(Snapshot(snapshot))
+    val pid               = PersistenceId(snapshotMetadata.persistenceId)
+    val context           = MetricsReporter.newContext(UUID.randomUUID(), pid)
+    val newContext        = metricsReporter.fold(context)(_.beforeSnapshotStoreSaveAsync(context))
+    val (byteArray, size) = serialize(snapshotMetadata, Snapshot(snapshot))
     val putObjectRequest = PutObjectRequest
       .builder()
       .contentLength(size.toLong)
       .bucket(resolveBucketName(snapshotMetadata))
       .key(convertToKey(snapshotMetadata))
       .build()
-    s3AsyncClient
+    val future = s3AsyncClient
       .putObject(putObjectRequest, AsyncRequestBody.fromBytes(byteArray))
       .flatMap { response =>
         val sdkHttpResponse = response.sdkHttpResponse
@@ -124,6 +167,13 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
             )
           )
       }
+    future.onComplete {
+      case Success(_) =>
+        metricsReporter.foreach(_.afterSnapshotStoreSaveAsync(newContext))
+      case Failure(ex) =>
+        metricsReporter.foreach(_.errorSnapshotStoreSaveAsync(newContext, ex))
+    }
+    future
   }
 
   override def deleteAsync(snapshotMetadata: SnapshotMetadata): Future[Unit] = {
@@ -138,12 +188,15 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
         )
       )
     else {
+      val pid        = PersistenceId(snapshotMetadata.persistenceId)
+      val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
+      val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreDeleteAsync(context))
       val request = DeleteObjectRequest
         .builder()
         .bucket(resolveBucketName(snapshotMetadata))
         .key(convertToKey(snapshotMetadata))
         .build()
-      s3AsyncClient.deleteObject(request).flatMap { response =>
+      val future = s3AsyncClient.deleteObject(request).flatMap { response =>
         val sdkHttpResponse = response.sdkHttpResponse
         if (response.sdkHttpResponse().isSuccessful)
           Future.successful(())
@@ -154,6 +207,13 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
             )
           )
       }
+      future.onComplete {
+        case Success(_) =>
+          metricsReporter.foreach(_.afterSnapshotStoreDeleteAsync(newContext))
+        case Failure(ex) =>
+          metricsReporter.foreach(_.errorSnapshotStoreDeleteAsync(newContext, ex))
+      }
+      future
     }
   }
 
@@ -161,8 +221,18 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       persistenceId: String,
       criteria: SnapshotSelectionCriteria
   ): Future[Unit] = {
-    val metadatas = snapshotMetadatas(persistenceId, criteria)
-    metadatas.map(list => Future.sequence(list.map(deleteAsync)))
+    val pid        = PersistenceId(persistenceId)
+    val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
+    val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreDeleteWithCriteriaAsync(context))
+    val metadatas  = snapshotMetadatas(persistenceId, criteria)
+    val future     = metadatas.flatMap(list => Future.sequence(list.map(deleteAsync))).map(_ => ())
+    future.onComplete {
+      case Success(_) =>
+        metricsReporter.foreach(_.afterSnapshotStoreDeleteWithCriteriaAsync(newContext))
+      case Failure(ex) =>
+        metricsReporter.foreach(_.errorSnapshotStoreDeleteWithCriteriaAsync(newContext, ex))
+    }
+    future
   }
 
   private def load(
@@ -180,7 +250,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
           .getObject(request, AsyncResponseTransformer.toBytes())
           .map { responseBytes =>
             if (responseBytes.response().sdkHttpResponse().isSuccessful) {
-              val snapshot = deserialize(responseBytes.asByteArray())
+              val snapshot = deserialize(snapshotMetadata, responseBytes.asByteArray())
               Some(SelectedSnapshot(snapshotMetadata, snapshot.data))
             } else None
           } recoverWith {

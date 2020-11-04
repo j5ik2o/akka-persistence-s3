@@ -1,5 +1,7 @@
 package com.github.j5ik2o.akka.persistence.s3.journal
 
+import java.util.UUID
+
 import akka.actor.{ ActorSystem, DynamicAccess, ExtendedActorSystem }
 import akka.persistence.journal.AsyncWriteJournal
 import akka.persistence.{ AtomicWrite, PersistentRepr }
@@ -7,6 +9,7 @@ import akka.serialization.{ Serialization, SerializationExtension }
 import akka.stream.Attributes
 import akka.stream.scaladsl.{ Sink, Source }
 import com.github.j5ik2o.akka.persistence.s3.base.config.S3ClientConfig
+import com.github.j5ik2o.akka.persistence.s3.base.metrics.{ MetricsReporter, MetricsReporterProvider }
 import com.github.j5ik2o.akka.persistence.s3.base.model.{ PersistenceId, SequenceNumber }
 import com.github.j5ik2o.akka.persistence.s3.base.resolver.{ Key, PathPrefixResolver }
 import com.github.j5ik2o.akka.persistence.s3.base.utils.{ HttpClientBuilderUtils, S3ClientBuilderUtils }
@@ -55,6 +58,11 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
   private val extendedSystem: ExtendedActorSystem = system.asInstanceOf[ExtendedActorSystem]
   private val dynamicAccess: DynamicAccess        = extendedSystem.dynamicAccess
 
+  protected val metricsReporter: Option[MetricsReporter] = {
+    val metricsReporterProvider = MetricsReporterProvider.create(dynamicAccess, pluginConfig)
+    metricsReporterProvider.create
+  }
+
   protected val bucketNameResolver: JournalBucketNameResolver = {
     dynamicAccess
       .createInstanceFor[JournalBucketNameResolver](
@@ -100,7 +108,7 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
   }
 
   protected val serializer: FlowPersistentReprSerializer[JournalRow] =
-    new ByteArrayJournalSerializer(serialization, pluginConfig.tagSeparator)
+    new ByteArrayJournalSerializer(serialization, pluginConfig.tagSeparator, metricsReporter)
 
   protected val logLevels: Attributes = Attributes.logLevels(
     onElement = Attributes.LogLevels.Debug,
@@ -109,6 +117,11 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
   )
 
   override def asyncWriteMessages(atomicWrites: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
+    val persistenceId = atomicWrites.head.persistenceId
+    val pid           = PersistenceId(persistenceId)
+    val context       = MetricsReporter.newContext(UUID.randomUUID(), pid)
+    val newContext    = metricsReporter.fold(context)(_.beforeJournalAsyncWriteMessages(context))
+
     val serializedTries = serializer.serialize(atomicWrites)
     val rowsToWrite = for {
       serializeTry <- serializedTries
@@ -153,14 +166,21 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
       }
       .map { _ =>
         resultWhenWriteComplete.map {
-          case Right(value) => Success(value)
-          case Left(ex)     => Failure(ex)
+          case Right(value) =>
+            metricsReporter.foreach(_.afterJournalAsyncWriteMessages(newContext))
+            Success(value)
+          case Left(ex) =>
+            metricsReporter.foreach(_.errorJournalAsyncWriteMessages(newContext, ex))
+            Failure(ex)
         }.toVector
       }
     future
   }
 
   override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] = {
+    val pid        = PersistenceId(persistenceId)
+    val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
+    val newContext = metricsReporter.fold(context)(_.beforeJournalAsyncDeleteMessagesTo(context))
     def deleteObject(pid: PersistenceId, obj: S3Object): Future[DeleteObjectResponse] = {
       val req = DeleteObjectRequest.builder().bucket(resolveBucketName(pid)).key(obj.key()).build()
       s3AsyncClient.deleteObject(req).flatMap { res =>
@@ -192,8 +212,7 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
           )
       }
     }
-    val pid = PersistenceId(persistenceId)
-    listObjectsSource(pid, listObjectsBatchSize)
+    val future = listObjectsSource(pid, listObjectsBatchSize)
       .log("list-objects")
       .mapConcat { res =>
         if (res.hasContents)
@@ -219,12 +238,21 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
       .withAttributes(logLevels)
       .runWith(Sink.ignore)
       .map(_ => ())
-
+    future.onComplete {
+      case Success(_) =>
+        metricsReporter.foreach(_.afterJournalAsyncDeleteMessagesTo(newContext))
+      case Failure(ex) =>
+        metricsReporter.foreach(_.errorJournalAsyncDeleteMessagesTo(newContext, ex))
+    }
+    future
   }
 
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
       recoveryCallback: PersistentRepr => Unit
   ): Future[Unit] = {
+    val pid        = PersistenceId(persistenceId)
+    val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
+    val newContext = metricsReporter.fold(context)(_.beforeJournalAsyncReplayMessages(context))
     def getObject(pid: PersistenceId, key: Key) = {
       val req = GetObjectRequest
         .builder()
@@ -277,18 +305,27 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
           }
           .take(max)
       }
-    s
+    val future = s
       .withAttributes(logLevels)
       .runForeach { result =>
         result.foreach(recoveryCallback)
       }
       .map(_ => ())
+    future.onComplete {
+      case Success(_) =>
+        metricsReporter.foreach(_.afterJournalAsyncReplayMessages(newContext))
+      case Failure(ex) =>
+        metricsReporter.foreach(_.errorJournalAsyncReplayMessages(newContext, ex))
+    }
+    future
   }
 
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] = {
-    val fromSeqNr = Math.max(1, fromSequenceNr)
-    val pid       = PersistenceId(persistenceId)
-    listObjectsSource(pid, listObjectsBatchSize)
+    val pid        = PersistenceId(persistenceId)
+    val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
+    val newContext = metricsReporter.fold(context)(_.beforeJournalAsyncReadHighestSequenceNr(context))
+    val fromSeqNr  = Math.max(1, fromSequenceNr)
+    val future = listObjectsSource(pid, listObjectsBatchSize)
       .log("list-objects")
       .mapConcat { res =>
         if (res.hasContents)
@@ -311,6 +348,13 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
       }
       .withAttributes(logLevels)
       .runWith(Sink.head)
+    future.onComplete {
+      case Success(_) =>
+        metricsReporter.foreach(_.afterJournalAsyncReadHighestSequenceNr(newContext))
+      case Failure(ex) =>
+        metricsReporter.foreach(_.errorJournalAsyncReadHighestSequenceNr(newContext, ex))
+    }
+    future
   }
 
   private def listObjectsSource(persistenceId: PersistenceId, batchSize: Int) = {
