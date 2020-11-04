@@ -3,7 +3,7 @@ val scala212Version            = "2.12.10"
 val scala213Version            = "2.13.1"
 val akka26Version              = "2.6.10"
 val akka25Version              = "2.5.32"
-val testcontainersScalaVersion = "0.38.4"
+val testcontainersScalaVersion = "0.38.5"
 
 def crossScalacOptions(scalaVersion: String): Seq[String] =
   CrossVersion.partialVersion(scalaVersion) match {
