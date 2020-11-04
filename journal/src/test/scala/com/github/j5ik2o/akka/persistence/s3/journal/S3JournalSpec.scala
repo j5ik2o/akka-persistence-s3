@@ -18,6 +18,7 @@ class S3JournalSpec
     extends JournalSpec(
       ConfigHelper.config(
         Some("journal-reference"),
+        sys.env.getOrElse("SBT_TEST_TIME_FACTOR", "1").toDouble,
         S3JournalSpec.minioPort,
         S3JournalSpec.accessKeyId,
         S3JournalSpec.secretAccessKey,

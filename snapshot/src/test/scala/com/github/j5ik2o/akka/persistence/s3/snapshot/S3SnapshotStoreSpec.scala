@@ -19,6 +19,7 @@ class S3SnapshotStoreSpec
     extends SnapshotStoreSpec(
       ConfigHelper.config(
         Some("snapshot-reference"),
+        sys.env.getOrElse("SBT_TEST_TIME_FACTOR", "1").toDouble,
         S3SnapshotStoreSpec.minioPort,
         S3SnapshotStoreSpec.accessKeyId,
         S3SnapshotStoreSpec.secretAccessKey,
@@ -44,7 +45,6 @@ class S3SnapshotStoreSpec
 
   override def afterStart(): Unit = {
     super.afterStart()
-    import system.dispatcher
     eventually {
       createS3Bucket()
     }
