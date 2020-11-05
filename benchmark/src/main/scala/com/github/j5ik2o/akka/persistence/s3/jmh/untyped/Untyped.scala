@@ -1,11 +1,11 @@
-package com.github.j5ik2o.akka.persistence.s3.jmh
+package com.github.j5ik2o.akka.persistence.s3.jmh.untyped
 
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 import akka.pattern.ask
 import akka.util.Timeout
-import com.github.j5ik2o.akka.persistence.s3.jmh.UntypedCounter.Increment
+import com.github.j5ik2o.akka.persistence.s3.jmh.untyped.UntypedCounter.Increment
 import com.github.j5ik2o.akka.persistence.s3.util.RandomPortUtil
 import org.openjdk.jmh.annotations._
 
@@ -35,11 +35,8 @@ class Untyped extends BenchmarkHelper {
     }
   }
 
-  override protected def minioAccessKeyId: String = Untyped.accessKeyId
-
+  override protected def minioAccessKeyId: String     = Untyped.accessKeyId
   override protected def minioSecretAccessKey: String = Untyped.secretAccessKey
-
-  override protected def minioPort: Int = Untyped.miniPort
-
-  override protected val s3BucketName: String = "untyped-" + UUID.randomUUID().toString
+  override protected def minioPort: Int               = Untyped.miniPort
+  override protected val s3BucketName: String         = "untyped-" + UUID.randomUUID().toString
 }

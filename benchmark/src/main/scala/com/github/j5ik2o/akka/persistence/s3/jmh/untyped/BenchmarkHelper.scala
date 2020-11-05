@@ -1,20 +1,15 @@
-package com.github.j5ik2o.akka.persistence.s3.jmh
+package com.github.j5ik2o.akka.persistence.s3.jmh.untyped
 
 import java.util.UUID
 
-import akka.actor.typed.scaladsl.adapter._
-import akka.actor.{ typed, ActorRef, ActorSystem, Props }
+import akka.actor.{ ActorRef, ActorSystem, Props }
 import com.github.j5ik2o.akka.persistence.s3.util.{ ConfigHelper, S3ContainerHelper }
 import org.openjdk.jmh.annotations.{ Setup, TearDown }
 
-import scala.concurrent.{ Await, ExecutionContext }
-import scala.concurrent.duration.Duration
-
 trait BenchmarkHelper extends S3ContainerHelper {
 
-  var system: ActorSystem                            = _
-  var untypedRef: ActorRef                           = _
-  var typedRef: typed.ActorRef[TypedCounter.Command] = _
+  var system: ActorSystem  = _
+  var untypedRef: ActorRef = _
 
   @Setup
   def setup(): Unit = {
@@ -34,7 +29,6 @@ trait BenchmarkHelper extends S3ContainerHelper {
 
     val props = Props(new UntypedCounter(UUID.randomUUID()))
     untypedRef = system.actorOf(props, "untyped-counter")
-    typedRef = system.spawn(TypedCounter(UUID.randomUUID()), "typed-counter")
   }
 
   @TearDown

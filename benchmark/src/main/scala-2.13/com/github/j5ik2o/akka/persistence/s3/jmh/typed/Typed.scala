@@ -1,4 +1,4 @@
-package com.github.j5ik2o.akka.persistence.s3.jmh
+package com.github.j5ik2o.akka.persistence.s3.jmh.typed
 
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.adapter._
 import akka.util.Timeout
-import com.github.j5ik2o.akka.persistence.s3.jmh.TypedCounter.{ Increment, IncrementReply }
+import com.github.j5ik2o.akka.persistence.s3.jmh.typed.TypedCounter.{ Increment, IncrementReply }
 import com.github.j5ik2o.akka.persistence.s3.util.RandomPortUtil
 import org.openjdk.jmh.annotations._
 
@@ -36,11 +36,8 @@ class Typed extends BenchmarkHelper {
     }
   }
 
-  override protected def minioAccessKeyId: String = Typed.accessKeyId
-
+  override protected def minioAccessKeyId: String     = Typed.accessKeyId
   override protected def minioSecretAccessKey: String = Typed.secretAccessKey
-
-  override protected def minioPort: Int = Typed.miniPort
-
-  override protected val s3BucketName: String = "typed-" + UUID.randomUUID().toString
+  override protected def minioPort: Int               = Typed.miniPort
+  override protected val s3BucketName: String         = "typed-" + UUID.randomUUID().toString
 }

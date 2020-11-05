@@ -1,9 +1,9 @@
-package com.github.j5ik2o.akka.persistence.s3.jmh
+package com.github.j5ik2o.akka.persistence.s3.jmh.untyped
 
 import java.util.UUID
 
 import akka.persistence._
-import com.github.j5ik2o.akka.persistence.s3.jmh.UntypedCounter.{ Increment, IncrementReply }
+import com.github.j5ik2o.akka.persistence.s3.jmh.untyped.UntypedCounter.{ Increment, IncrementReply }
 
 object UntypedCounter {
   sealed trait Command

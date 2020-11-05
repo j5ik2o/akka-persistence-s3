@@ -1,4 +1,4 @@
-package com.github.j5ik2o.akka.persistence.s3.jmh
+package com.github.j5ik2o.akka.persistence.s3.jmh.typed
 
 import java.util.UUID
 
