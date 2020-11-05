@@ -79,10 +79,10 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     pluginConfig.pathPrefix.orElse(pathPrefixResolver.resolve(persistenceId))
   }
 
-  private def resolveBucketName(snapshotMetadata: SnapshotMetadata) = {
+  private def resolveBucketName(persistenceId: PersistenceId) = {
     pluginConfig.bucketName
       .map(_.stripPrefix("/"))
-      .getOrElse(bucketNameResolver.resolve(PersistenceId(snapshotMetadata.persistenceId)))
+      .getOrElse(bucketNameResolver.resolve(persistenceId))
   }
 
   private def convertToKey(snapshotMetadata: SnapshotMetadata) = {
@@ -151,7 +151,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     val putObjectRequest = PutObjectRequest
       .builder()
       .contentLength(size.toLong)
-      .bucket(resolveBucketName(snapshotMetadata))
+      .bucket(resolveBucketName(pid))
       .key(convertToKey(snapshotMetadata))
       .build()
     val future = s3AsyncClient
@@ -193,7 +193,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreDeleteAsync(context))
       val request = DeleteObjectRequest
         .builder()
-        .bucket(resolveBucketName(snapshotMetadata))
+        .bucket(resolveBucketName(pid))
         .key(convertToKey(snapshotMetadata))
         .build()
       val future = s3AsyncClient.deleteObject(request).flatMap { response =>
@@ -243,7 +243,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       case Some(snapshotMetadata) =>
         val request = GetObjectRequest
           .builder()
-          .bucket(resolveBucketName(snapshotMetadata))
+          .bucket(resolveBucketName(PersistenceId(snapshotMetadata.persistenceId)))
           .key(convertToKey(snapshotMetadata))
           .build()
         s3AsyncClient
@@ -267,7 +267,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     val pid = PersistenceId(persistenceId)
     var builder = ListObjectsRequest
       .builder()
-      .bucket(bucketNameResolver.resolve(pid))
+      .bucket(resolveBucketName(pid))
       .delimiter("/")
     builder = resolvePathPrefix(pid).fold(builder)(builder.prefix)
     val request = builder.build()
