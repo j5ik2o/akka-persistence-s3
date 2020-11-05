@@ -131,7 +131,7 @@ lazy val base = (project in file("base"))
       }
     }
   )
-  .dependsOn(test % "test->test")
+  .dependsOn(test % "test->compile")
 
 lazy val snapshot = (project in file("snapshot"))
   .settings(coreSettings)
@@ -203,12 +203,12 @@ lazy val benchmark = (project in file("benchmark"))
         case Some((2L, scalaMajor)) if scalaMajor >= 12 =>
           Seq(
             akka.slf4j(akka26Version),
-            akka.persistenceTck(akka26Version)
+            akka.persistenceTyped(akka26Version)
           )
         case Some((2L, scalaMajor)) if scalaMajor == 11 =>
           Seq(
             akka.slf4j(akka25Version),
-            akka.persistenceTck(akka25Version)
+            akka.persistence(akka25Version)
           )
       }
     }
