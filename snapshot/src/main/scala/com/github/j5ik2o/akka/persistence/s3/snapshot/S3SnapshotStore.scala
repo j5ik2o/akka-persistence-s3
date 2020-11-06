@@ -96,15 +96,16 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
   protected def deserialize(metadata: SnapshotMetadata, bytes: Array[Byte]): Snapshot = {
     val context    = MetricsReporter.newContext(UUID.randomUUID(), PersistenceId(metadata.persistenceId))
     val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreDeserializeSnapshot(context))
-    try serialization
-      .deserialize(bytes, classOf[Snapshot])
-      .get
-    catch {
+    try {
+      val result = serialization
+        .deserialize(bytes, classOf[Snapshot])
+        .get
+      metricsReporter.foreach(_.afterSnapshotStoreDeserializeSnapshot(newContext))
+      result
+    } catch {
       case ex: Throwable =>
         metricsReporter.foreach(_.errorSnapshotStoreDeserializeSnapshot(newContext, ex))
         throw ex
-    } finally {
-      metricsReporter.foreach(_.afterSnapshotStoreDeserializeSnapshot(newContext))
     }
   }
 
@@ -113,13 +114,14 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
     val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreSerializeSnapshot(context))
     val serialized =
-      try serialization.findSerializerFor(snapshot).toBinary(snapshot)
-      catch {
+      try {
+        val result = serialization.findSerializerFor(snapshot).toBinary(snapshot)
+        metricsReporter.foreach(_.afterSnapshotStoreSerializeSnapshot(newContext))
+        result
+      } catch {
         case ex: Throwable =>
           metricsReporter.foreach(_.errorSnapshotStoreSerializeSnapshot(newContext, ex))
           throw ex
-      } finally {
-        metricsReporter.foreach(_.afterSnapshotStoreSerializeSnapshot(newContext))
       }
     (serialized, serialized.length)
   }
