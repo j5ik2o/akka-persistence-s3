@@ -364,20 +364,20 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
       .maxKeys(batchSize)
       .delimiter("/")
     builder = resolvePathPrefix(persistenceId).fold(builder)(builder.prefix)
-    val req = builder.build()
+    val request = builder.build()
     Source
       .unfoldAsync[(ListObjectsV2Request, FlowControl), ListObjectsV2Response](
-        (req, Continue)
+        (request, Continue)
       ) {
-        case (req, control) =>
-          def retrieveNextBatch() =
-            s3AsyncClient.listObjectsV2(req).flatMap { res =>
+        case (request, control) =>
+          def retrieveNextBatch(): Future[Some[((ListObjectsV2Request, FlowControl), ListObjectsV2Response)]] =
+            s3AsyncClient.listObjectsV2(request).flatMap { res =>
               if (res.sdkHttpResponse().isSuccessful) {
                 if (res.nextContinuationToken() != null) {
-                  val newReq = req.toBuilder.continuationToken(res.nextContinuationToken()).build()
+                  val newReq = request.toBuilder.continuationToken(res.nextContinuationToken()).build()
                   Future.successful(Some((newReq, Continue), res))
                 } else {
-                  Future.successful(Some((req, Stop), res))
+                  Future.successful(Some((request, Stop), res))
                 }
               } else
                 Future.failed(
