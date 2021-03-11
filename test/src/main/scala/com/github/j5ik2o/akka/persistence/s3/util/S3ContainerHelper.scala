@@ -1,11 +1,11 @@
 package com.github.j5ik2o.akka.persistence.s3.util
 
 import java.net.URI
-
 import com.dimafeng.testcontainers.{ Container, FixedHostPortGenericContainer }
+import org.testcontainers.DockerClientFactory
 import org.testcontainers.containers.wait.strategy.Wait
 import software.amazon.awssdk.auth.credentials.{ AwsBasicCredentials, StaticCredentialsProvider }
-import software.amazon.awssdk.services.s3.model.CreateBucketRequest
+import software.amazon.awssdk.services.s3.model.{ CreateBucketRequest, ListBucketsResponse }
 import software.amazon.awssdk.services.s3.{ S3Client => JavaS3SyncClient }
 
 import scala.jdk.CollectionConverters._
@@ -16,6 +16,8 @@ trait S3ContainerHelper {
 
   protected def minioAccessKeyId: String
   protected def minioSecretAccessKey: String
+
+  protected def minioHost: String = DockerClientFactory.instance().dockerHostIpAddress()
   protected def minioPort: Int
 
   protected lazy val minioContainer: Container =
@@ -32,16 +34,27 @@ trait S3ContainerHelper {
       c.withFileSystemBind("./target/data", "/data", BindMode.READ_WRITE)
     }*/
 
-  lazy val javaS3SyncClient = JavaS3SyncClient
+  lazy val javaS3SyncClient: JavaS3SyncClient = JavaS3SyncClient
     .builder()
     .credentialsProvider(
       StaticCredentialsProvider
         .create(AwsBasicCredentials.create(minioAccessKeyId, minioSecretAccessKey))
     )
-    .endpointOverride(URI.create(s"http://127.0.0.1:${minioPort}"))
+    .endpointOverride(URI.create(s"http://$minioHost:$minioPort"))
     .build()
 
   protected def s3BucketName: String
+
+  protected def waitBucket(): Unit = {
+    while (!javaS3SyncClient.listBuckets().buckets().asScala.exists(_.name() == s3BucketName)) {
+      println("waiting create bucket...")
+      Thread.sleep(100)
+    }
+  }
+
+  protected def listBuckets(): ListBucketsResponse = {
+    javaS3SyncClient.listBuckets()
+  }
 
   protected def createS3Bucket(): Unit = {
     if (!javaS3SyncClient.listBuckets().buckets().asScala.exists(_.name() == s3BucketName)) {
