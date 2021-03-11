@@ -63,7 +63,7 @@ object Dependencies {
   }
 
   object dimafeng {
-    val testcontainersScalaVersion   = "0.38.9"
+    val testcontainersScalaVersion   = "0.39.3"
     val testcontainerScala: ModuleID = "com.dimafeng" %% "testcontainers-scala" % testcontainersScalaVersion
     val testcontainerScalaScalaTest: ModuleID =
       "com.dimafeng" %% "testcontainers-scala-scalatest" % testcontainersScalaVersion
