@@ -62,6 +62,7 @@ val coreSettings = Seq(
       "Seasar Repository" at "https://maven.seasar.org/maven2/",
       "jitpack" at "https://jitpack.io"
     ),
+  fork in Test := true,
   parallelExecution in Test := false,
   scalafmtOnCompile in ThisBuild := true
 )

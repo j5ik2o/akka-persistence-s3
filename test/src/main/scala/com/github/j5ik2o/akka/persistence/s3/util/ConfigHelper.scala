@@ -7,6 +7,7 @@ object ConfigHelper {
   def config(
       defaultResource: Option[String],
       testTimeFactor: Double,
+      s3Host: String,
       s3Port: Int,
       accessKeyId: String,
       secretAccessKey: String,
@@ -22,7 +23,7 @@ object ConfigHelper {
          |  s3-client {
          |    access-key-id = "${accessKeyId}"
          |    secret-access-key = "${secretAccessKey}"
-         |    endpoint = "http://127.0.0.1:${s3Port}"
+         |    endpoint = "http://$s3Host:$s3Port"
          |    s3-options {
          |      path-style-access-enabled = true
          |    }
@@ -34,7 +35,7 @@ object ConfigHelper {
          |  s3-client {
          |    access-key-id = "${accessKeyId}"
          |    secret-access-key = "${secretAccessKey}"
-         |    endpoint = "http://127.0.0.1:${s3Port}"
+         |    endpoint = "http://$s3Host:$s3Port"
          |    s3-options {
          |      path-style-access-enabled = true
          |    }

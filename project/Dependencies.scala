@@ -6,9 +6,9 @@ object Dependencies {
     val scala211Version     = "2.11.12"
     val scala212Version     = "2.12.10"
     val scala213Version     = "2.13.1"
-    val akka26Version       = "2.6.10"
+    val akka26Version       = "2.6.13"
     val akka25Version       = "2.5.32"
-    val scalaTest311Version = "3.1.1"
+    val scalaTest311Version = "3.2.5"
     val scalaTest308Version = "3.0.8"
   }
 
@@ -35,7 +35,7 @@ object Dependencies {
   }
 
   object scalacheck {
-    val scalacheck: ModuleID = "org.scalacheck" %% "scalacheck" % "1.15.1"
+    val scalacheck: ModuleID = "org.scalacheck" %% "scalacheck" % "1.15.2"
   }
 
   object scalatest {
@@ -43,7 +43,7 @@ object Dependencies {
   }
 
   object scala {
-    val collectionCompat: ModuleID         = "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6"
+    val collectionCompat: ModuleID         = "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.2"
     def reflect(version: String): ModuleID = "org.scala-lang"          % "scala-reflect"           % version
   }
 
@@ -56,14 +56,14 @@ object Dependencies {
   }
 
   object testcontainers {
-    val testcontainersVersion              = "1.15.0"
+    val testcontainersVersion              = "1.15.2"
     val testcontainers: ModuleID           = "org.testcontainers" % "testcontainers" % testcontainersVersion
     val testcontainersLocalStack: ModuleID = "org.testcontainers" % "localstack"     % testcontainersVersion
     val testcontainersKafka: ModuleID      = "org.testcontainers" % "kafka"          % testcontainersVersion
   }
 
   object dimafeng {
-    val testcontainersScalaVersion   = "0.38.5"
+    val testcontainersScalaVersion   = "0.38.9"
     val testcontainerScala: ModuleID = "com.dimafeng" %% "testcontainers-scala" % testcontainersScalaVersion
     val testcontainerScalaScalaTest: ModuleID =
       "com.dimafeng" %% "testcontainers-scala-scalatest" % testcontainersScalaVersion

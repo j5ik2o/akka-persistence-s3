@@ -19,6 +19,7 @@ trait BenchmarkHelper extends S3ContainerHelper {
       ConfigHelper.config(
         None,
         testTimeFactor = 1.0,
+        s3Host = minioHost,
         s3Port = minioPort,
         accessKeyId = minioAccessKeyId,
         secretAccessKey = minioSecretAccessKey,
