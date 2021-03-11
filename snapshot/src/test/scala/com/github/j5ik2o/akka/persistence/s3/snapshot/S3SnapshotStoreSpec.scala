@@ -3,12 +3,9 @@ package com.github.j5ik2o.akka.persistence.s3.snapshot
 import com.dimafeng.testcontainers.{ Container, ForEachTestContainer }
 import com.github.j5ik2o.akka.persistence.s3.config.SnapshotPluginConfig
 import com.github.j5ik2o.akka.persistence.s3.util.{ ConfigHelper, RandomPortUtil, S3SpecSupport }
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
-import org.scalatest.time.{ Millis, Second, Seconds, Span }
+import org.scalatest.time.{ Millis, Seconds, Span }
 import org.testcontainers.DockerClientFactory
-
-import scala.concurrent.duration.DurationInt
 
 object S3SnapshotStoreSpec {
   val bucketName: String      = SnapshotPluginConfig.defaultBucketName
