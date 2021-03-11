@@ -64,7 +64,6 @@ val coreSettings = Seq(
     ),
   fork in Test := true,
   parallelExecution in Test := false,
-//  Global / concurrentRestrictions += Tags.limit(Tags.Test, 1),
   scalafmtOnCompile in ThisBuild := true
 )
 
