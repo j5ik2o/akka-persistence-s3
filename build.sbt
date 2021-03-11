@@ -44,7 +44,7 @@ lazy val deploySettings = Seq(
 
 val coreSettings = Seq(
   organization := "com.github.j5ik2o",
-  scalaVersion := scala213Version,
+  scalaVersion := scala211Version,
   crossScalaVersions ++= Seq(scala211Version, scala212Version, scala213Version),
   scalacOptions ++=
     Seq(
@@ -110,24 +110,24 @@ lazy val base = (project in file("base"))
           Seq(
             akka.slf4j(akka26Version),
             akka.stream(akka26Version),
-            akka.testkit(akka26Version)              % Test,
-            scalatest.scalatest(scalaTest311Version) % Test
+            akka.testkit(akka26Version)             % Test,
+            scalatest.scalatest(scalaTest32Version) % Test
           )
         case Some((2L, scalaMajor)) if scalaMajor == 12 =>
           Seq(
             scala.collectionCompat,
             akka.slf4j(akka26Version),
             akka.stream(akka26Version),
-            akka.testkit(akka26Version)              % Test,
-            scalatest.scalatest(scalaTest311Version) % Test
+            akka.testkit(akka26Version)             % Test,
+            scalatest.scalatest(scalaTest32Version) % Test
           )
         case Some((2L, scalaMajor)) if scalaMajor == 11 =>
           Seq(
             scala.collectionCompat,
             akka.slf4j(akka25Version),
             akka.stream(akka25Version),
-            akka.testkit(akka25Version)              % Test,
-            scalatest.scalatest(scalaTest308Version) % Test
+            akka.testkit(akka25Version)             % Test,
+            scalatest.scalatest(scalaTest30Version) % Test
           )
       }
     }
