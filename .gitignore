@@ -29,3 +29,4 @@ data/
 .credentials
 .gpgCredentials
 .bsp/
+.bloop/
