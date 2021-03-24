@@ -29,7 +29,7 @@ jobs:
       - run:
           command: |
             sbt ++"2.11.12" test
-            sbt ++"2.12.10" test
+            sbt ++"2.12.13" test
             sbt ++"2.13.5" test
           no_output_timeout: 1h
       - save_cache:
