@@ -1,6 +1,7 @@
 # akka-persistence-s3(support aws sdk for java v2)
 
-[![CircleCI](https://circleci.com/gh/j5ik2o/akka-persistence-s3/tree/master.svg?style=shield&circle-token=d764dfd21bb20c816689c236607ac1426a72b581)](https://circleci.com/gh/j5ik2o/akka-persistence-s3/tree/master)
+[![Scala CI](https://github.com/j5ik2o/akka-persistence-s3/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/j5ik2o/akka-persistence-s3/actions/workflows/ci.yml)
+[![Mergify Status](https://img.shields.io/endpoint.svg?url=https://gh.mergify.io/badges/j5ik2o/akka-persistence-s3&style=flat)](https://mergify.io)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.j5ik2o/akka-persistence-s3_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.j5ik2o/akka-persistence-s3_2.12)
 [![Scaladoc](http://javadoc-badge.appspot.com/com.github.j5ik2o/akka-persistence-s3_2.12.svg?label=scaladoc)](http://javadoc-badge.appspot.com/com.github.j5ik2o/akka-persistence-s3_2.12/com/github/j5ik2o/akka/persistence/s3/index.html?javadocio=true)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
