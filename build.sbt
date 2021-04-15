@@ -9,41 +9,18 @@ def crossScalacOptions(scalaVersion: String): Seq[String] =
       Seq("-Yinline-warnings")
   }
 
-lazy val deploySettings = Seq(
-  sonatypeProfileName := "com.github.j5ik2o",
-  publishMavenStyle := true,
-  publishArtifact in Test := false,
-  pomIncludeRepository := { _ => false },
-  pomExtra := {
-    <url>https://github.com/j5ik2o/akka-persistence-s3</url>
-      <licenses>
-        <license>
-          <name>Apache 2</name>
-          <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-        </license>
-      </licenses>
-      <scm>
-        <url>git@github.com:j5ik2o/akka-persistence-s3.git</url>
-        <connection>scm:git:github.com/j5ik2o/akka-persistence-s3</connection>
-        <developerConnection>scm:git:git@github.com:j5ik2o/akka-persistence-s3.git</developerConnection>
-      </scm>
-      <developers>
-        <developer>
-          <id>j5ik2o</id>
-          <name>Junichi Kato</name>
-        </developer>
-      </developers>
-  },
-  publishTo := sonatypePublishToBundle.value,
-  credentials := {
-    val ivyCredentials = (baseDirectory in LocalRootProject).value / ".credentials"
-    val gpgCredentials = (baseDirectory in LocalRootProject).value / ".gpgCredentials"
-    Credentials(ivyCredentials) :: Credentials(gpgCredentials) :: Nil
-  }
-)
-
 val coreSettings = Seq(
   organization := "com.github.j5ik2o",
+  homepage := Some(url("https://github.com/j5ik2o/akka-persistence-s3")),
+  licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+  developers := List(
+      Developer(
+        id = "j5ik2o",
+        name = "Junichi Kato",
+        email = "j5ik2o@gmail.com",
+        url = url("https://blog.j5ik2o.me")
+      )
+    ),
   scalaVersion := scala211Version,
   crossScalaVersions ++= Seq(scala211Version, scala212Version, scala213Version),
   scalacOptions ++=
@@ -62,14 +39,14 @@ val coreSettings = Seq(
       "Seasar Repository" at "https://maven.seasar.org/maven2/",
       "jitpack" at "https://jitpack.io"
     ),
-  fork in Test := true,
-  parallelExecution in Test := false,
-  scalafmtOnCompile in ThisBuild := true
+  Test / fork := true,
+  Test / publishArtifact := false,
+  Test / parallelExecution := false,
+  ThisBuild / scalafmtOnCompile := true
 )
 
 lazy val test = (project in file("test"))
   .settings(coreSettings)
-  .settings(deploySettings)
   .settings(
     name := "akka-persistence-s3-test",
     libraryDependencies ++= Seq(
@@ -89,7 +66,6 @@ lazy val test = (project in file("test"))
 
 lazy val base = (project in file("base"))
   .settings(coreSettings)
-  .settings(deploySettings)
   .settings(
     name := "akka-persistence-s3-base",
     libraryDependencies ++= Seq(
@@ -136,7 +112,6 @@ lazy val base = (project in file("base"))
 
 lazy val snapshot = (project in file("snapshot"))
   .settings(coreSettings)
-  .settings(deploySettings)
   .settings(
     name := "akka-persistence-s3-snapshot",
     libraryDependencies ++= {
@@ -163,7 +138,6 @@ lazy val snapshot = (project in file("snapshot"))
 
 lazy val journal = (project in file("journal"))
   .settings(coreSettings)
-  .settings(deploySettings)
   .settings(
     name := "akka-persistence-s3-journal",
     libraryDependencies ++= {
@@ -190,10 +164,9 @@ lazy val journal = (project in file("journal"))
 
 lazy val benchmark = (project in file("benchmark"))
   .settings(coreSettings)
-  .settings(deploySettings)
   .settings(
     name := "akka-persistence-dynamodb-benchmark",
-    skip in publish := true,
+    publish / skip := true,
     libraryDependencies ++= Seq(
         logback.classic,
         slf4j.api,
@@ -219,9 +192,8 @@ lazy val benchmark = (project in file("benchmark"))
 
 lazy val root = (project in file("."))
   .settings(coreSettings)
-  .settings(deploySettings)
   .settings(
     name := "akka-persistence-s3-root",
-    skip in publish := true
+    publish / skip := true
   )
   .aggregate(base, journal, snapshot)
