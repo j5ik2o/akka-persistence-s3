@@ -26,7 +26,7 @@ import scala.concurrent.duration._
 //  override protected def supportsRejectingNonSerializableObjects: CapabilityFlag = CapabilityFlag.off()
 //
 //  /** Override in order to customize timeouts used for expectMsg, in order to tune the awaits to your journal's perf */
-//  override def awaitDurationMillis: Long = (600 * sys.env.getOrElse("SBT_TEST_TIME_FACTOR", "1").toInt).seconds.toMillis
+//  override def awaitDurationMillis: Long = (600 * sys.env.getOrElse("TEST_TIME_FACTOR", "1").toInt).seconds.toMillis
 //
 //  /** Number of messages sent to the PersistentActor under test for each test iteration */
 //  override def eventsCount: Int = 5
