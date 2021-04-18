@@ -20,8 +20,8 @@ final case class JournalRow(
     other match {
       case that: JournalRow =>
         (that canEqual this) &&
-        persistenceId == that.persistenceId &&
-        sequenceNumber == that.sequenceNumber
+          persistenceId == that.persistenceId &&
+          sequenceNumber == that.sequenceNumber
       case _ => false
     }
 

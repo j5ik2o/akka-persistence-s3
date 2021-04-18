@@ -14,13 +14,13 @@ val coreSettings = Seq(
   homepage := Some(url("https://github.com/j5ik2o/akka-persistence-s3")),
   licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
   developers := List(
-      Developer(
-        id = "j5ik2o",
-        name = "Junichi Kato",
-        email = "j5ik2o@gmail.com",
-        url = url("https://blog.j5ik2o.me")
-      )
-    ),
+    Developer(
+      id = "j5ik2o",
+      name = "Junichi Kato",
+      email = "j5ik2o@gmail.com",
+      url = url("https://blog.j5ik2o.me")
+    )
+  ),
   scalaVersion := scala211Version,
   crossScalaVersions ++= Seq(scala211Version, scala212Version, scala213Version),
   scalacOptions ++=
@@ -36,11 +36,11 @@ val coreSettings = Seq(
       "-Ywarn-unused"
     ) ++ crossScalacOptions(scalaVersion.value),
   resolvers ++= Seq(
-      "Sonatype OSS Snapshot Repository" at "https://oss.sonatype.org/content/repositories/snapshots/",
-      "Sonatype OSS Release Repository" at "https://oss.sonatype.org/content/repositories/releases/",
-      "Seasar Repository" at "https://maven.seasar.org/maven2/",
-      "jitpack" at "https://jitpack.io"
-    ),
+    "Sonatype OSS Snapshot Repository" at "https://oss.sonatype.org/content/repositories/snapshots/",
+    "Sonatype OSS Release Repository" at "https://oss.sonatype.org/content/repositories/releases/",
+    "Seasar Repository" at "https://maven.seasar.org/maven2/",
+    "jitpack" at "https://jitpack.io"
+  ),
   ThisBuild / scalafixScalaBinaryVersion := CrossVersion.binaryScalaVersion(scalaVersion.value),
   semanticdbEnabled := true,
   semanticdbVersion := scalafixSemanticdb.revision,
@@ -54,11 +54,11 @@ lazy val test = (project in file("test"))
   .settings(
     name := "akka-persistence-s3-test",
     libraryDependencies ++= Seq(
-        typesafe.config,
-        j5ik2o.reactiveAwsS3,
-        testcontainers.testcontainers,
-        dimafeng.testcontainerScalaScalaTest
-      ),
+      typesafe.config,
+      j5ik2o.reactiveAwsS3,
+      testcontainers.testcontainers,
+      dimafeng.testcontainerScalaScalaTest
+    ),
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2L, scalaMajor)) if scalaMajor == 13 => Seq.empty
@@ -73,17 +73,17 @@ lazy val base = (project in file("base"))
   .settings(
     name := "akka-persistence-s3-base",
     libraryDependencies ++= Seq(
-        scala.reflect(scalaVersion.value),
-        iheart.ficus,
-        slf4j.api,
-        j5ik2o.reactiveAwsS3,
-        scalacheck.scalacheck                   % Test,
-        logback.classic                         % Test,
-        testcontainers.testcontainers           % Test,
-        testcontainers.testcontainersLocalStack % Test,
-        dimafeng.testcontainerScalaScalaTest    % Test,
-        dimafeng.testcontainerScalaLocalstack   % Test
-      ),
+      scala.reflect(scalaVersion.value),
+      iheart.ficus,
+      slf4j.api,
+      j5ik2o.reactiveAwsS3,
+      scalacheck.scalacheck                   % Test,
+      logback.classic                         % Test,
+      testcontainers.testcontainers           % Test,
+      testcontainers.testcontainersLocalStack % Test,
+      dimafeng.testcontainerScalaScalaTest    % Test,
+      dimafeng.testcontainerScalaLocalstack   % Test
+    ),
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2L, scalaMajor)) if scalaMajor == 13 =>
@@ -172,10 +172,10 @@ lazy val benchmark = (project in file("benchmark"))
     name := "akka-persistence-dynamodb-benchmark",
     publish / skip := true,
     libraryDependencies ++= Seq(
-        logback.classic,
-        slf4j.api,
-        slf4j.julToSlf4J
-      ),
+      logback.classic,
+      slf4j.api,
+      slf4j.julToSlf4J
+    ),
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2L, scalaMajor)) if scalaMajor >= 12 =>
