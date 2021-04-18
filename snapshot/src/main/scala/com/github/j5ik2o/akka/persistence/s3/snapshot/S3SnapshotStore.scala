@@ -255,10 +255,9 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
               val snapshot = deserialize(snapshotMetadata, responseBytes.asByteArray())
               Some(SelectedSnapshot(snapshotMetadata, snapshot.data))
             } else None
-          } recoverWith {
-          case NonFatal(e) =>
-            log.error(e, s"Error loading snapshot [${snapshotMetadata}]")
-            load(metadata.init) // try older snapshot
+          } recoverWith { case NonFatal(e) =>
+          log.error(e, s"Error loading snapshot [${snapshotMetadata}]")
+          load(metadata.init) // try older snapshot
         }
     }
 

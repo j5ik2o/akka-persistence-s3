@@ -157,12 +157,11 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
       }
     }
     val future = rowsToWrite
-      .foldLeft(Future.successful(Vector.empty[PutObjectResponse])) {
-        case (result, journalRow) =>
-          for {
-            r <- result
-            e <- putObject(journalRow)
-          } yield r :+ e
+      .foldLeft(Future.successful(Vector.empty[PutObjectResponse])) { case (result, journalRow) =>
+        for {
+          r <- result
+          e <- putObject(journalRow)
+        } yield r :+ e
       }
       .map { _ =>
         resultWhenWriteComplete.map {
@@ -228,12 +227,11 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
         else
           Vector.empty
       }
-      .mapAsync(1) {
-        case (obj, persistenceId, seqNr) =>
-          for {
-            _   <- copyObject(pid, obj, seqNr)
-            res <- deleteObject(pid, obj)
-          } yield res
+      .mapAsync(1) { case (obj, persistenceId, seqNr) =>
+        for {
+          _   <- copyObject(pid, obj, seqNr)
+          res <- deleteObject(pid, obj)
+        } yield res
       }
       .withAttributes(logLevels)
       .runWith(Sink.ignore)
@@ -291,13 +289,12 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
             else
               Vector.empty
           }
-          .filter {
-            case (_, deleted, pid, seqNr) =>
-              !deleted && pid == persistenceId && fromSeqNr <= seqNr && seqNr <= toSequenceNr
+          .filter { case (_, deleted, pid, seqNr) =>
+            !deleted && pid == persistenceId && fromSeqNr <= seqNr && seqNr <= toSequenceNr
           }
           .log("element")
-          .mapAsync(1) {
-            case (key, _, _, _) => getObject(pid, key)
+          .mapAsync(1) { case (key, _, _, _) =>
+            getObject(pid, key)
           }
           .map { bytes =>
             serialization
@@ -337,9 +334,8 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
         else
           Vector.empty
       }
-      .filter {
-        case (pid, seqNr) =>
-          pid == persistenceId && fromSeqNr <= seqNr
+      .filter { case (pid, seqNr) =>
+        pid == persistenceId && fromSeqNr <= seqNr
       }
       .fold(Vector.empty[(String, Long)])(_ :+ _)
       .map(_.sortWith(_._2 < _._2))
@@ -368,28 +364,27 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
     Source
       .unfoldAsync[(ListObjectsV2Request, FlowControl), ListObjectsV2Response](
         (request, Continue)
-      ) {
-        case (request, control) =>
-          def retrieveNextBatch(): Future[Some[((ListObjectsV2Request, FlowControl), ListObjectsV2Response)]] =
-            s3AsyncClient.listObjectsV2(request).flatMap { res =>
-              if (res.sdkHttpResponse().isSuccessful) {
-                if (res.nextContinuationToken() != null) {
-                  val newReq = request.toBuilder.continuationToken(res.nextContinuationToken()).build()
-                  Future.successful(Some((newReq, Continue), res))
-                } else {
-                  Future.successful(Some((request, Stop), res))
-                }
-              } else
-                Future.failed(
-                  new S3JournalException(
-                    s"Failed to listObjectsV2: statusCode = ${res.sdkHttpResponse.statusCode()}"
-                  )
+      ) { case (request, control) =>
+        def retrieveNextBatch(): Future[Some[((ListObjectsV2Request, FlowControl), ListObjectsV2Response)]] =
+          s3AsyncClient.listObjectsV2(request).flatMap { res =>
+            if (res.sdkHttpResponse().isSuccessful) {
+              if (res.nextContinuationToken() != null) {
+                val newReq = request.toBuilder.continuationToken(res.nextContinuationToken()).build()
+                Future.successful(Some((newReq, Continue), res))
+              } else {
+                Future.successful(Some((request, Stop), res))
+              }
+            } else
+              Future.failed(
+                new S3JournalException(
+                  s"Failed to listObjectsV2: statusCode = ${res.sdkHttpResponse.statusCode()}"
                 )
-            }
-          control match {
-            case Stop     => Future.successful(None)
-            case Continue => retrieveNextBatch()
+              )
           }
+        control match {
+          case Stop     => Future.successful(None)
+          case Continue => retrieveNextBatch()
+        }
       }
   }
 
