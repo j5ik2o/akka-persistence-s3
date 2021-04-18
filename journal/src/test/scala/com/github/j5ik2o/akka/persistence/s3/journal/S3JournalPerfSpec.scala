@@ -1,14 +1,14 @@
-package com.github.j5ik2o.akka.persistence.s3.journal
+// package com.github.j5ik2o.akka.persistence.s3.journal
 
-import akka.actor.ActorSystem
-import akka.persistence.CapabilityFlag
-import akka.persistence.journal.JournalPerfSpec
-import com.dimafeng.testcontainers.{ Container, ForAllTestContainer, ForEachTestContainer }
-import com.github.j5ik2o.akka.persistence.s3.util.{ ConfigHelper, S3SpecSupport }
-import org.scalatest.concurrent.{ Eventually, ScalaFutures }
-import org.scalatest.time.{ Second, Seconds, Span }
+// import akka.actor.ActorSystem
+// import akka.persistence.CapabilityFlag
+// import akka.persistence.journal.JournalPerfSpec
+// import com.dimafeng.testcontainers.{ Container, ForAllTestContainer, ForEachTestContainer }
+// import com.github.j5ik2o.akka.persistence.s3.util.{ ConfigHelper, S3SpecSupport }
+// import org.scalatest.concurrent.{ Eventually, ScalaFutures }
+// import org.scalatest.time.{ Second, Seconds, Span }
 
-import scala.concurrent.duration._
+// import scala.concurrent.duration._
 
 //class S3JournalPerfSpec
 //    extends JournalPerfSpec(

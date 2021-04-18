@@ -31,7 +31,9 @@ val coreSettings = Seq(
       "-encoding",
       "UTF-8",
       "-language:_",
-      "-target:jvm-1.8"
+      "-target:jvm-1.8",
+      "-Yrangepos",
+      "-Ywarn-unused"
     ) ++ crossScalacOptions(scalaVersion.value),
   resolvers ++= Seq(
       "Sonatype OSS Snapshot Repository" at "https://oss.sonatype.org/content/repositories/snapshots/",
@@ -39,10 +41,12 @@ val coreSettings = Seq(
       "Seasar Repository" at "https://maven.seasar.org/maven2/",
       "jitpack" at "https://jitpack.io"
     ),
+  ThisBuild / scalafixScalaBinaryVersion := CrossVersion.binaryScalaVersion(scalaVersion.value),
+  semanticdbEnabled := true,
+  semanticdbVersion := scalafixSemanticdb.revision,
   Test / fork := true,
   Test / publishArtifact := false,
-  Test / parallelExecution := false,
-  ThisBuild / scalafmtOnCompile := true
+  Test / parallelExecution := false
 )
 
 lazy val test = (project in file("test"))
@@ -197,3 +201,7 @@ lazy val root = (project in file("."))
     publish / skip := true
   )
   .aggregate(base, journal, snapshot)
+
+// --- Custom commands
+addCommandAlias("lint", ";scalafmtCheck;test:scalafmtCheck;scalafmtSbtCheck;scalafixAll --check")
+addCommandAlias("fmt", ";scalafmtAll;scalafmtSbt")
