@@ -30,6 +30,14 @@ object Dependencies {
     val julToSlf4J: ModuleID = "org.slf4j" % "jul-to-slf4j" % "1.7.30"
   }
 
+  object software {
+
+    object awssdk {
+      val s3 = "software.amazon.awssdk" % "s3" % "2.16.45"
+    }
+
+  }
+
   object j5ik2o {
     val reactiveAwsS3: ModuleID = "com.github.j5ik2o" %% "reactive-aws-s3-core" % "1.2.6"
   }

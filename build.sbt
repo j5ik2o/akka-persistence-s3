@@ -76,7 +76,7 @@ lazy val base = (project in file("base"))
       scala.reflect(scalaVersion.value),
       iheart.ficus,
       slf4j.api,
-      j5ik2o.reactiveAwsS3,
+      software.awssdk.s3,
       scalacheck.scalacheck                   % Test,
       logback.classic                         % Test,
       testcontainers.testcontainers           % Test,
