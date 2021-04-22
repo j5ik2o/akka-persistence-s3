@@ -1,7 +1,5 @@
 package com.github.j5ik2o.akka.persistence.s3.journal
 
-import java.util.UUID
-
 import akka.actor.{ ActorSystem, DynamicAccess, ExtendedActorSystem }
 import akka.persistence.journal.AsyncWriteJournal
 import akka.persistence.{ AtomicWrite, PersistentRepr }
@@ -20,13 +18,15 @@ import com.github.j5ik2o.akka.persistence.s3.resolver.{
   JournalMetadataKeyConverter
 }
 import com.github.j5ik2o.akka.persistence.s3.serialization.{ ByteArrayJournalSerializer, FlowPersistentReprSerializer }
-import com.github.j5ik2o.reactive.aws.s3.S3AsyncClient
 import com.typesafe.config.Config
+import software.amazon.awssdk.core.async.{ AsyncRequestBody, AsyncResponseTransformer }
 import software.amazon.awssdk.core.internal.async.ByteArrayAsyncRequestBody
 import software.amazon.awssdk.services.s3.model._
 
+import java.util.UUID
 import scala.collection.immutable
 import scala.collection.immutable.{ Nil, Seq }
+import scala.compat.java8.FutureConverters._
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 import scala.util.{ Failure, Success, Try }
@@ -53,7 +53,7 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
   private val httpClientBuilder                   = HttpClientBuilderUtils.setup(s3ClientConfig)
   private val javaS3ClientBuilder =
     S3ClientBuilderUtils.setup(s3ClientConfig, httpClientBuilder.build())
-  private val s3AsyncClient = S3AsyncClient(javaS3ClientBuilder.build())
+  private val s3AsyncClient = javaS3ClientBuilder.build()
 
   private val extendedSystem: ExtendedActorSystem = system.asInstanceOf[ExtendedActorSystem]
   private val dynamicAccess: DynamicAccess        = extendedSystem.dynamicAccess
@@ -145,7 +145,7 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
         .bucket(resolveBucketName(journalRow.persistenceId))
         .key(key)
         .build()
-      s3AsyncClient.putObject(req, new ByteArrayAsyncRequestBody(journalRow.message)).flatMap { res =>
+      s3AsyncClient.putObject(req, AsyncRequestBody.fromBytes(journalRow.message)).toScala.flatMap { res =>
         if (res.sdkHttpResponse().isSuccessful)
           Future.successful(res)
         else
@@ -182,7 +182,7 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
     val newContext = metricsReporter.fold(context)(_.beforeJournalAsyncDeleteMessagesTo(context))
     def deleteObject(pid: PersistenceId, obj: S3Object): Future[DeleteObjectResponse] = {
       val req = DeleteObjectRequest.builder().bucket(resolveBucketName(pid)).key(obj.key()).build()
-      s3AsyncClient.deleteObject(req).flatMap { res =>
+      s3AsyncClient.deleteObject(req).toScala.flatMap { res =>
         if (res.sdkHttpResponse().isSuccessful)
           Future.successful(res)
         else
@@ -200,7 +200,7 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
         .destinationBucket(resolveBucketName(pid))
         .destinationKey(resolveKey(pid, SequenceNumber(seqNr), deleted = true))
         .build()
-      s3AsyncClient.copyObject(req).flatMap { res =>
+      s3AsyncClient.copyObject(req).toScala.flatMap { res =>
         if (res.sdkHttpResponse().isSuccessful) {
           Future.successful(res)
         } else
@@ -257,7 +257,7 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
         .bucket(resolveBucketName(pid))
         .key(key)
         .build()
-      s3AsyncClient.getObjectAsBytes(req).flatMap { result =>
+      s3AsyncClient.getObject(req, AsyncResponseTransformer.toBytes[GetObjectResponse]).toScala.flatMap { result =>
         if (result.response().sdkHttpResponse().isSuccessful)
           Future.successful(result.asByteArray())
         else
@@ -366,7 +366,7 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
         (request, Continue)
       ) { case (request, control) =>
         def retrieveNextBatch(): Future[Some[((ListObjectsV2Request, FlowControl), ListObjectsV2Response)]] =
-          s3AsyncClient.listObjectsV2(request).flatMap { res =>
+          s3AsyncClient.listObjectsV2(request).toScala.flatMap { res =>
             if (res.sdkHttpResponse().isSuccessful) {
               if (res.nextContinuationToken() != null) {
                 val newReq = request.toBuilder.continuationToken(res.nextContinuationToken()).build()

@@ -1,7 +1,5 @@
 package com.github.j5ik2o.akka.persistence.s3.snapshot
 
-import java.util.UUID
-
 import akka.actor.{ ActorSystem, DynamicAccess, ExtendedActorSystem }
 import akka.persistence.serialization.Snapshot
 import akka.persistence.snapshot.SnapshotStore
@@ -14,12 +12,13 @@ import com.github.j5ik2o.akka.persistence.s3.base.resolver.PathPrefixResolver
 import com.github.j5ik2o.akka.persistence.s3.base.utils.{ HttpClientBuilderUtils, S3ClientBuilderUtils }
 import com.github.j5ik2o.akka.persistence.s3.config.SnapshotPluginConfig
 import com.github.j5ik2o.akka.persistence.s3.resolver.{ SnapshotBucketNameResolver, SnapshotMetadataKeyConverter }
-import com.github.j5ik2o.reactive.aws.s3.S3AsyncClient
 import com.typesafe.config.Config
 import software.amazon.awssdk.core.async.{ AsyncRequestBody, AsyncResponseTransformer }
 import software.amazon.awssdk.services.s3.model._
 
+import java.util.UUID
 import scala.collection.immutable
+import scala.compat.java8.FutureConverters._
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 import scala.util.control.NonFatal
@@ -40,7 +39,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
   private val httpClientBuilder = HttpClientBuilderUtils.setup(s3ClientConfig)
   private val javaS3ClientBuilder =
     S3ClientBuilderUtils.setup(s3ClientConfig, httpClientBuilder.build())
-  private val s3AsyncClient = S3AsyncClient(javaS3ClientBuilder.build())
+  private val s3AsyncClient = javaS3ClientBuilder.build()
 
   private val extendedSystem: ExtendedActorSystem = system.asInstanceOf[ExtendedActorSystem]
   private val dynamicAccess: DynamicAccess        = extendedSystem.dynamicAccess
@@ -158,6 +157,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       .build()
     val future = s3AsyncClient
       .putObject(putObjectRequest, AsyncRequestBody.fromBytes(byteArray))
+      .toScala
       .flatMap { response =>
         val sdkHttpResponse = response.sdkHttpResponse
         if (response.sdkHttpResponse().isSuccessful)
@@ -198,7 +198,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
         .bucket(resolveBucketName(pid))
         .key(convertToKey(snapshotMetadata))
         .build()
-      val future = s3AsyncClient.deleteObject(request).flatMap { response =>
+      val future = s3AsyncClient.deleteObject(request).toScala.flatMap { response =>
         val sdkHttpResponse = response.sdkHttpResponse
         if (response.sdkHttpResponse().isSuccessful)
           Future.successful(())
@@ -249,7 +249,8 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
           .key(convertToKey(snapshotMetadata))
           .build()
         s3AsyncClient
-          .getObject(request, AsyncResponseTransformer.toBytes())
+          .getObject(request, AsyncResponseTransformer.toBytes[GetObjectResponse])
+          .toScala
           .map { responseBytes =>
             if (responseBytes.response().sdkHttpResponse().isSuccessful) {
               val snapshot = deserialize(snapshotMetadata, responseBytes.asByteArray())
@@ -274,6 +275,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     val request = builder.build()
     s3AsyncClient
       .listObjects(request)
+      .toScala
       .flatMap { response =>
         val sdkHttpResponse = response.sdkHttpResponse
         if (sdkHttpResponse.isSuccessful)
