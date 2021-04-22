@@ -21,8 +21,6 @@ akka-persistence-s3 writes snapshot entries to AWS S3. It's non-blocking I/ O us
 Add the following to your sbt build (2.11.x, 2.12.x, 2.13.x):
 
 ```scala
-resolvers += "Sonatype OSS Release Repository" at "https://oss.sonatype.org/content/repositories/releases/"
-
 val version = "..."
 
 libraryDependencies += Seq(
