@@ -83,23 +83,11 @@ jobs:
           format: 'json'
       - id: changed
         run: |
-          echo $(pwd)
-          TARGET_FILES=$(cat "${GITHUB_WORKSPACE}/.github/target-files")
-          readarray -d ',' -t CHANGED_FILES <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.all }}')"
-          EXIST="false"
-          for CHANGED_FILE in ${CHANGED_FILES[@]}; do
-            echo "CHANGED_FILE=$CHANGED_FILE"
-            for TARGET_FILE in ${TARGET_FILES[@]}; do
-              echo "TARGET_FILE=$TARGET_FILE"
-              if [[ ${CHANGED_FILE} = ${TARGET_FILE} ]]; then
-                EXIST="true"
-                break
-              fi
-            done
-            if [[ "$EXIST" = "true" ]]; then
-              break
-            fi
-          done
+          TARGET_FILES=$(cat "$GITHUB_WORKSPACE}/.github/target-files)
+          echo "TARGET_FILES=($TARGET_FILES)"
+          readarray -t CHANGED_FILES <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.all }}')"
+          echo "CHANGED_FILES=($CHANGED_FILES)"
+          EXIST=$(${GITHUB_WORKSPACE}/.github/changed-files.sh $CHANGED_FILES $TARGET_FILES)
           echo "result = $EXIST"
           echo "::set-output name=result::$EXIST"
       - name: automerge
