@@ -95,7 +95,7 @@ jobs:
               break
             fi
           done
-          echo "result=EXISTS"
+          echo "result=$EXISTS"
           echo "::set-output name=result::$EXIST"
       - name: Generate token
         id: generate_token
