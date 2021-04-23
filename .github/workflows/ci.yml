@@ -83,7 +83,7 @@ jobs:
           format: 'json'
       - id: changed
         run: |
-          TARGET_FILES=$(cat "$GITHUB_WORKSPACE}/.github/target-files)
+          TARGET_FILES=$(cat "${GITHUB_WORKSPACE}/.github/target-files")
           echo "TARGET_FILES=($TARGET_FILES)"
           readarray -t CHANGED_FILES <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.all }}')"
           echo "CHANGED_FILES=($CHANGED_FILES)"
