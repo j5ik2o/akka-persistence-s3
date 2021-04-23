@@ -74,6 +74,26 @@ jobs:
         with:
           app_id: 111016
           private_key: ${{ secrets.BOT_PRIVATE_KEY }}
+      - id: files
+        uses: jitterbit/get-changed-files@v1
+        with:
+          format: 'json'
+      - id: changed
+        run: |
+          target_files=(".scalafmt.conf", "project/plugins.sbt", "project/Dependencies.scala")
+          readarray -t changed_files <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.all }}')"
+          echo ${changed_files[@]}
+          EXIST=false
+          for file in ${changed_files[@]}; do
+            for target_file in ${target_files[@]}; do
+              if [[ ${file} = ${target_file} ]]; then
+                EXIST = true
+                break
+              fi
+            done
+          done
+          echo "result = $EXIST"
+          echo "::set-output name=result::$EXIST"
       - name: labeler
         uses: actions/labeler@v3
         with:
