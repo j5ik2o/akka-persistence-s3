@@ -82,9 +82,10 @@ jobs:
         run: |
           TARGET_FILES=(".scalafmt.conf", "project/plugins.sbt", "project/Dependencies.scala")
           readarray -d ',' -t CHANGED_FILES <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.all }}')"
-          echo ${changed_files[@]}
+          echo ${CHANGED_FILES[@]}
           EXIST="false"
           for CHANGED_FILE in ${CHANGED_FILES[@]}; do
+            CHANGED_FILE=$(echo $CHANGED_FILE | sed -e 's/,//')
             echo "CHANGED_FILE=$CHANGED_FILE"
             for TARGET_FILE in ${TARGET_FILES[@]}; do
               echo "TARGET_FILE=$TARGET_FILE"
