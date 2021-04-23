@@ -80,36 +80,30 @@ jobs:
           format: 'json'
       - id: changed
         run: |
-          TARGET_FILES=(".scalafmt.conf" "project/plugins.sbt" "project/Dependencies.scala")
+          TARGET_FILES=$(cat ${GITHUB_WORKSPACE}/.github/target-file)
+#          TARGET_FILES=(".scalafmt.conf" "project/plugins.sbt" "project/Dependencies.scala")
           readarray -d ',' -t CHANGED_FILES <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.all }}')"
-          echo ${CHANGED_FILES[@]}
           EXIST="false"
           for CHANGED_FILE in ${CHANGED_FILES[@]}; do
-            CHANGED_FILE=$(echo $CHANGED_FILE | sed -e 's/,//')
             echo "CHANGED_FILE=$CHANGED_FILE"
             for TARGET_FILE in ${TARGET_FILES[@]}; do
               echo "TARGET_FILE=$TARGET_FILE"
               if [[ ${CHANGED_FILE} = ${TARGET_FILE} ]]; then
-                echo "EXIST=true; break; loop = 1"
                 EXIST="true"
                 break
               fi
             done
             if [[ "$EXIST" = "true" ]]; then
-                echo "EXIST=true; break; loop = 2"
               break
             fi
           done
           echo "result = $EXIST"
           echo "::set-output name=result::$EXIST"
-      - name: labeler
-        uses: actions/labeler@v3
-        with:
-          repo-token: "${{ steps.generate_token.outputs.token }}"
       - name: automerge
         uses: pascalgn/automerge-action@v0.13.1
         env:
           GITHUB_TOKEN: "${{ steps.generate_token.outputs.token }}"
-          MERGE_LABELS: "automerge"
+          MERGE_LABELS: ""
           MERGE_METHOD: "rebase"
           MERGE_FILTER_AUTHOR: "j5ik2o-bot[bot]"
+        if: $${{ steps.changed.outputs.result == true }}
