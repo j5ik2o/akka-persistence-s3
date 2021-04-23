@@ -81,7 +81,7 @@ jobs:
       - id: changed
         run: |
           TARGET_FILES=(".scalafmt.conf", "project/plugins.sbt", "project/Dependencies.scala")
-          readarray -t CHANGED_FILES <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.all }}')"
+          readarray -d ',' -t CHANGED_FILES <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.all }}')"
           echo ${changed_files[@]}
           EXIST="false"
           for CHANGED_FILE in ${CHANGED_FILES[@]}; do
