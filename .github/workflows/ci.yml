@@ -81,7 +81,7 @@ jobs:
       - id: changed
         run: |
           echo $(pwd)
-          TARGET_FILES=$(cat .github/target-files)
+          TARGET_FILES=$(cat "${GITHUB_WORKSPACE}/.github/target-files")
           readarray -d ',' -t CHANGED_FILES <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.all }}')"
           EXIST="false"
           for CHANGED_FILE in ${CHANGED_FILES[@]}; do
