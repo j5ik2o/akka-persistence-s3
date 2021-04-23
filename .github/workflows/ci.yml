@@ -81,7 +81,6 @@ jobs:
       - id: changed
         run: |
           TARGET_FILES=$(cat ${GITHUB_WORKSPACE}/.github/target-file)
-#          TARGET_FILES=(".scalafmt.conf" "project/plugins.sbt" "project/Dependencies.scala")
           readarray -d ',' -t CHANGED_FILES <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.all }}')"
           EXIST="false"
           for CHANGED_FILE in ${CHANGED_FILES[@]}; do
