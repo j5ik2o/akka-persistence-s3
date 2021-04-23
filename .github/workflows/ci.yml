@@ -80,16 +80,19 @@ jobs:
           format: 'json'
       - id: changed
         run: |
-          target_files=(".scalafmt.conf", "project/plugins.sbt", "project/Dependencies.scala")
-          readarray -t changed_files <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.all }}')"
+          TARGET_FILES=(".scalafmt.conf", "project/plugins.sbt", "project/Dependencies.scala")
+          readarray -t CHANGED_FILES <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.all }}')"
           echo ${changed_files[@]}
-          EXIST=false
-          for file in ${changed_files[@]}; do
-            for target_file in ${target_files[@]}; do
-              if [[ ${file} = ${target_file} ]]; then
-                EXIST = true
+          EXIST="false"
+          for CHANGED_FILE in ${CHANGED_FILES[@]}; do
+            for TARGET_FILE in ${TARGET_FILES[@]}; do
+              if [[ ${CHANGED_FILE} = ${TARGET_FILE} ]]; then
+                EXIST="true"
                 break
               fi
+            done
+            if [[ "$EXIST" = "true" ]]; do
+              break
             done
           done
           echo "result = $EXIST"
