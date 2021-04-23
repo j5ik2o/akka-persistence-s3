@@ -94,10 +94,10 @@ jobs:
                 break
               fi
             done
-            if [[ "$EXIST" = "true" ]]; do
+            if [[ "$EXIST" = "true" ]]; then
                 echo "EXIST=true; break; loop = 2"
               break
-            done
+            fi
           done
           echo "result = $EXIST"
           echo "::set-output name=result::$EXIST"
