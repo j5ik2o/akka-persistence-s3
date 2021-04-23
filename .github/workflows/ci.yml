@@ -68,42 +68,12 @@ jobs:
     if: github.event_name == 'pull_request'
     needs: test
     steps:
-      - uses: actions/checkout@v2.3.4
-        with:
-          fetch-depth: 0
-      - id: files
-        uses: jitterbit/get-changed-files@v1
-        with:
-          format: 'json'
-      - id: changed
-        run: |
-          TARGET_FILES=$(cat "${GITHUB_WORKSPACE}/.github/target-files")
-          echo "TARGET_FILES=($TARGET_FILES)"
-          readarray -t CHANGED_FILES <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.all }}')"
-          echo "CHANGED_FILES=($CHANGED_FILES)"
-          EXISTS="false"
-          for CHANGED_FILE in ${CHANGED_FILES[@]}; do
-            echo "CHANGED_FILE=$CHANGED_FILE"
-            for TARGET_FILE in ${TARGET_FILES[@]}; do
-              echo "TARGET_FILE=$TARGET_FILE"
-              if [[ ${CHANGED_FILE} = ${TARGET_FILE} ]]; then
-                EXISTS="true"
-                break
-              fi
-            done
-            if [[ "$EXISTS" = "true" ]]; then
-              break
-            fi
-          done
-          echo "result=$EXISTS"
-          echo "::set-output name=result::$EXIST"
       - name: Generate token
         id: generate_token
         uses: tibdex/github-app-token@v1
         with:
           app_id: 111016
           private_key: ${{ secrets.BOT_PRIVATE_KEY }}
-        if: $${{ steps.changed.outputs.result == true }}
       - name: automerge
         uses: pascalgn/automerge-action@v0.13.1
         env:
@@ -111,4 +81,3 @@ jobs:
           MERGE_LABELS: ""
           MERGE_METHOD: "rebase"
           MERGE_FILTER_AUTHOR: "j5ik2o-bot[bot]"
-        if: $${{ steps.changed.outputs.result == true }}
