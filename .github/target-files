@@ -1,0 +1,3 @@
+.scalafmt.conf
+project/plugins.sbt
+project/Dependencies.scala
