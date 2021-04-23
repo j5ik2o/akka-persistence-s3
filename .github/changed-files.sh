@@ -21,4 +21,4 @@ for CHANGED_FILE in ${CHANGED_FILES[@]}; do
   fi
 done
 
-echo $EXIST
+echo "::set-output name=result::$EXIST"

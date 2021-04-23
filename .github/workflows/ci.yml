@@ -87,9 +87,7 @@ jobs:
           echo "TARGET_FILES=($TARGET_FILES)"
           readarray -t CHANGED_FILES <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.all }}')"
           echo "CHANGED_FILES=($CHANGED_FILES)"
-          EXIST=$(${GITHUB_WORKSPACE}/.github/changed-files.sh)
-          echo "result = $EXIST"
-          echo "::set-output name=result::$EXIST"
+          "${GITHUB_WORKSPACE}/.github/changed-files.sh"
       - name: automerge
         uses: pascalgn/automerge-action@v0.13.1
         env:
