@@ -49,7 +49,7 @@ object Dependencies {
   }
 
   object scalacheck {
-    val scalacheck: ModuleID = "org.scalacheck" %% "scalacheck" % "1.15.2"
+    val scalacheck: ModuleID = "org.scalacheck" %% "scalacheck" % "1.15.3"
   }
 
   object scalatest {
