@@ -29,7 +29,7 @@ libraryDependencies += Seq(
 )
 ```
 
-## Configration
+## Configuration
 
 The minimum necessary settings are as follows.
 
