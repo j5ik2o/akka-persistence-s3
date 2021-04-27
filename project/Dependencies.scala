@@ -3,9 +3,8 @@ import sbt._
 object Dependencies {
 
   object Versions {
-    val scala211Version    = "2.11.12"
     val scala212Version    = "2.12.10"
-    val scala213Version    = "2.13.1"
+    val scala213Version    = "2.13.5"
     val akka26Version      = "2.6.10"
     val akka25Version      = "2.5.32"
     val scalaTest32Version = "3.2.5"
@@ -39,7 +38,14 @@ object Dependencies {
   }
 
   object j5ik2o {
-    val reactiveAwsS3: ModuleID = "com.github.j5ik2o" %% "reactive-aws-s3-core" % "1.2.6"
+    val version = "1.1.0"
+    val dockerControllerScalaScalatest =
+      "com.github.j5ik2o" %% "docker-controller-scala-scalatest" % version
+    val dockerControllerScalaMinio =
+      "com.github.j5ik2o" %% "docker-controller-scala-minio" % version
+    val dockerControllerScalaLocalstack =
+      "com.github.j5ik2o" %% "docker-controller-scala-localstack" % version
+    //   val reactiveAwsS3: ModuleID = "com.github.j5ik2o" %% "reactive-aws-s3-core" % "1.2.6"
   }
 
   object scalacheck {
@@ -63,22 +69,22 @@ object Dependencies {
     val config: ModuleID = "com.typesafe" % "config" % "1.4.1"
   }
 
-  object testcontainers {
-    val testcontainersVersion              = "1.15.3"
-    val testcontainers: ModuleID           = "org.testcontainers" % "testcontainers" % testcontainersVersion
-    val testcontainersLocalStack: ModuleID = "org.testcontainers" % "localstack"     % testcontainersVersion
-    val testcontainersKafka: ModuleID      = "org.testcontainers" % "kafka"          % testcontainersVersion
-  }
+//  object testcontainers {
+//    val testcontainersVersion              = "1.15.3"
+//    val testcontainers: ModuleID           = "org.testcontainers" % "testcontainers" % testcontainersVersion
+//    val testcontainersLocalStack: ModuleID = "org.testcontainers" % "localstack"     % testcontainersVersion
+//    val testcontainersKafka: ModuleID      = "org.testcontainers" % "kafka"          % testcontainersVersion
+//  }
 
-  object dimafeng {
-    val testcontainersScalaVersion   = "0.39.3"
-    val testcontainerScala: ModuleID = "com.dimafeng" %% "testcontainers-scala" % testcontainersScalaVersion
-    val testcontainerScalaScalaTest: ModuleID =
-      "com.dimafeng" %% "testcontainers-scala-scalatest" % testcontainersScalaVersion
-    //    val testcontainerScalaMsql       = "com.dimafeng" %% "testcontainers-scala-mysql" % testcontainersScalaVersion
-    val testcontainerScalaKafka: ModuleID = "com.dimafeng" %% "testcontainers-scala-kafka" % testcontainersScalaVersion
-    val testcontainerScalaLocalstack: ModuleID =
-      "com.dimafeng" %% "testcontainers-scala-localstack" % testcontainersScalaVersion
-  }
+//  object dimafeng {
+//    val testcontainersScalaVersion   = "0.39.3"
+//    val testcontainerScala: ModuleID = "com.dimafeng" %% "testcontainers-scala" % testcontainersScalaVersion
+//    val testcontainerScalaScalaTest: ModuleID =
+//      "com.dimafeng" %% "testcontainers-scala-scalatest" % testcontainersScalaVersion
+//    //    val testcontainerScalaMsql       = "com.dimafeng" %% "testcontainers-scala-mysql" % testcontainersScalaVersion
+//    val testcontainerScalaKafka: ModuleID = "com.dimafeng" %% "testcontainers-scala-kafka" % testcontainersScalaVersion
+//    val testcontainerScalaLocalstack: ModuleID =
+//      "com.dimafeng" %% "testcontainers-scala-localstack" % testcontainersScalaVersion
+//  }
 
 }

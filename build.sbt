@@ -21,8 +21,8 @@ val coreSettings = Seq(
       url = url("https://blog.j5ik2o.me")
     )
   ),
-  scalaVersion := scala211Version,
-  crossScalaVersions ++= Seq(scala211Version, scala212Version, scala213Version),
+  scalaVersion := scala213Version,
+  crossScalaVersions ++= Seq(scala212Version, scala213Version),
   scalacOptions ++=
     Seq(
       "-feature",
@@ -55,9 +55,11 @@ lazy val test = (project in file("test"))
     name := "akka-persistence-s3-test",
     libraryDependencies ++= Seq(
       typesafe.config,
-      j5ik2o.reactiveAwsS3,
-      testcontainers.testcontainers,
-      dimafeng.testcontainerScalaScalaTest
+      software.awssdk.s3,
+//      testcontainers.testcontainers,
+//      dimafeng.testcontainerScalaScalaTest,
+      j5ik2o.dockerControllerScalaScalatest,
+      j5ik2o.dockerControllerScalaMinio
     ),
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
@@ -77,12 +79,9 @@ lazy val base = (project in file("base"))
       iheart.ficus,
       slf4j.api,
       software.awssdk.s3,
-      scalacheck.scalacheck                   % Test,
-      logback.classic                         % Test,
-      testcontainers.testcontainers           % Test,
-      testcontainers.testcontainersLocalStack % Test,
-      dimafeng.testcontainerScalaScalaTest    % Test,
-      dimafeng.testcontainerScalaLocalstack   % Test
+      scalacheck.scalacheck                 % Test,
+      logback.classic                       % Test,
+      j5ik2o.dockerControllerScalaScalatest % Test
     ),
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {

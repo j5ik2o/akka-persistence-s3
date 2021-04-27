@@ -20,7 +20,6 @@ import com.github.j5ik2o.akka.persistence.s3.resolver.{
 import com.github.j5ik2o.akka.persistence.s3.serialization.{ ByteArrayJournalSerializer, FlowPersistentReprSerializer }
 import com.typesafe.config.Config
 import software.amazon.awssdk.core.async.{ AsyncRequestBody, AsyncResponseTransformer }
-import software.amazon.awssdk.core.internal.async.ByteArrayAsyncRequestBody
 import software.amazon.awssdk.services.s3.model._
 
 import java.util.UUID

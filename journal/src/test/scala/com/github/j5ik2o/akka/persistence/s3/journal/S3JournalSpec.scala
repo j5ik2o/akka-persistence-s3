@@ -1,19 +1,20 @@
 package com.github.j5ik2o.akka.persistence.s3.journal
 
 import akka.persistence.CapabilityFlag
-import com.dimafeng.testcontainers.{ Container, ForEachTestContainer }
+import com.github.dockerjava.core.DockerClientConfig
 import com.github.j5ik2o.akka.persistence.s3.config.JournalPluginConfig
 import com.github.j5ik2o.akka.persistence.s3.util.{ ConfigHelper, RandomPortUtil, S3SpecSupport }
+import com.github.j5ik2o.dockerController.{ DockerClientConfigUtil, DockerControllerSpecSupport }
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.time.{ Millis, Seconds, Span }
-import org.testcontainers.DockerClientFactory
 
 object S3JournalSpec {
-  val accessKeyId: String     = "AKIAIOSFODNN7EXAMPLE"
-  val secretAccessKey: String = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-  val minioHost: String       = DockerClientFactory.instance().dockerHostIpAddress()
-  val minioPort: Int          = RandomPortUtil.temporaryServerPort()
-  val bucketName: String      = JournalPluginConfig.defaultBucketName
+  val accessKeyId: String                    = "AKIAIOSFODNN7EXAMPLE"
+  val secretAccessKey: String                = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+  val dockerClientConfig: DockerClientConfig = DockerClientConfigUtil.buildConfigAwareOfDockerMachine()
+  val minioHost: String                      = DockerClientConfigUtil.dockerHost(dockerClientConfig)
+  val minioPort: Int                         = RandomPortUtil.temporaryServerPort()
+  val bucketName: String                     = JournalPluginConfig.defaultBucketName
 }
 
 class S3JournalSpec
@@ -29,8 +30,8 @@ class S3JournalSpec
       )
     )
     with ScalaFutures
-    with ForEachTestContainer
     with S3SpecSupport
+    with DockerControllerSpecSupport
     with Eventually {
   override protected def supportsRejectingNonSerializableObjects: CapabilityFlag = CapabilityFlag.on()
 
@@ -46,10 +47,7 @@ class S3JournalSpec
 
   override protected def s3BucketName: String = S3JournalSpec.bucketName
 
-  override def container: Container = minioContainer
-
-  override def afterStart(): Unit = {
-    super.afterStart()
+  override def afterStartContainers(): Unit = {
     eventually {
       listBuckets()
     }

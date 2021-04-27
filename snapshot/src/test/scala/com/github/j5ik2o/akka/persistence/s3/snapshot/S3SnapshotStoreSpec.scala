@@ -1,18 +1,19 @@
 package com.github.j5ik2o.akka.persistence.s3.snapshot
 
-import com.dimafeng.testcontainers.{ Container, ForEachTestContainer }
+import com.github.dockerjava.core.DockerClientConfig
 import com.github.j5ik2o.akka.persistence.s3.config.SnapshotPluginConfig
 import com.github.j5ik2o.akka.persistence.s3.util.{ ConfigHelper, RandomPortUtil, S3SpecSupport }
+import com.github.j5ik2o.dockerController.{ DockerClientConfigUtil, DockerControllerSpecSupport }
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.time.{ Millis, Seconds, Span }
-import org.testcontainers.DockerClientFactory
 
 object S3SnapshotStoreSpec {
-  val bucketName: String      = SnapshotPluginConfig.defaultBucketName
-  val accessKeyId: String     = "AKIAIOSFODNN7EXAMPLE"
-  val secretAccessKey: String = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-  val minioHost: String       = DockerClientFactory.instance().dockerHostIpAddress()
-  val minioPort: Int          = RandomPortUtil.temporaryServerPort()
+  val bucketName: String                     = SnapshotPluginConfig.defaultBucketName
+  val accessKeyId: String                    = "AKIAIOSFODNN7EXAMPLE"
+  val secretAccessKey: String                = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+  val dockerClientConfig: DockerClientConfig = DockerClientConfigUtil.buildConfigAwareOfDockerMachine()
+  val minioHost: String                      = DockerClientConfigUtil.dockerHost(dockerClientConfig)
+  val minioPort: Int                         = RandomPortUtil.temporaryServerPort()
 }
 
 class S3SnapshotStoreSpec
@@ -28,7 +29,7 @@ class S3SnapshotStoreSpec
       )
     )
     with S3SpecSupport
-    with ForEachTestContainer
+    with DockerControllerSpecSupport
     with ScalaFutures
     with Eventually {
 
@@ -44,10 +45,7 @@ class S3SnapshotStoreSpec
 
   override protected def s3BucketName: String = S3SnapshotStoreSpec.bucketName
 
-  override def container: Container = minioContainer
-
-  override def afterStart(): Unit = {
-    super.afterStart()
+  override def afterStartContainers(): Unit = {
     eventually {
       listBuckets()
     }
