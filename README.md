@@ -12,13 +12,13 @@ akka-persistence-s3 writes snapshot entries to AWS S3. It's non-blocking I/ O us
 ## Supported versions:
 
 - Java: `1.8+`
-- Scala: `2.12.x` or `2.13.x` 
-- Akka: `2.6.x`(Scala 2.12, 2.13)
+- Scala: `2.12.x` or `2.13.x` or `3.0.0-RC2`
+- Akka: `2.6.x`
 - AWS-SDK: `2.4.x`
 
 ## Installation
 
-Add the following to your sbt build (2.12.x, 2.13.x):
+Add the following to your sbt build (2.12.x, 2.13.x, 3.0.0-RC2):
 
 ```scala
 val version = "..."
