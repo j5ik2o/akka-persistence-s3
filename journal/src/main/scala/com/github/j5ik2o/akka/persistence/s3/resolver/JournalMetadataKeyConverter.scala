@@ -30,12 +30,12 @@ object JournalMetadataKeyConverter {
       val pattern: Regex = ("""^(.+)/(\d+)\.(.+)\.""" + extensionName + "$").r
       key match {
         case pattern(
-              persistenceId: String,
-              sequenceNr: String,
-              deleted: String
+              persistenceId,
+              sequenceNr,
+              deleted
             ) =>
           JournalMetadataKey(
-            PersistenceId(persistenceId),
+            com.github.j5ik2o.akka.persistence.s3.base.model.PersistenceId(persistenceId),
             SequenceNumber(sequenceNr.reverse.toLong),
             if (deleted == "inactive") true else false
           )

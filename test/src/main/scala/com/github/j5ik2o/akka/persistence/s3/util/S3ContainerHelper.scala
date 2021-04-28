@@ -1,7 +1,7 @@
 package com.github.j5ik2o.akka.persistence.s3.util
 
 import com.github.j5ik2o.dockerController.minio.MinioController
-import com.github.j5ik2o.dockerController.{ DockerController, DockerControllerHelper, WaitPredicates }
+import com.github.j5ik2o.dockerController.{ CmdConfigures, DockerController, DockerControllerHelper, WaitPredicates }
 import software.amazon.awssdk.auth.credentials.{ AwsBasicCredentials, StaticCredentialsProvider }
 import software.amazon.awssdk.services.s3.model.{ CreateBucketRequest, ListBucketsResponse }
 import software.amazon.awssdk.services.s3.{ S3Client => JavaS3SyncClient }
@@ -21,7 +21,13 @@ trait S3ContainerHelper extends DockerControllerHelper {
   protected def minioPort: Int
 
   protected val minioController: MinioController =
-    MinioController(dockerClient)(minioPort, minioAccessKeyId, minioSecretAccessKey)
+    MinioController(dockerClient)(minioPort, minioAccessKeyId, minioSecretAccessKey).configureCmds {
+      CmdConfigures(
+        removeContainerCmdConfigure = {
+          _.withForce(true)
+        }
+      )
+    }.asInstanceOf[MinioController]
 
   override protected val dockerControllers: Vector[DockerController] = Vector(minioController)
 
