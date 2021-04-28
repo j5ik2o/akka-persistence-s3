@@ -98,9 +98,9 @@ lazy val base = (project in file("base"))
     },
     libraryDependencies ++= Seq(
       iheart.ficus,
-      akka.slf4j(akkaVersion),
-      akka.stream(akkaVersion),
-      akka.testkit(akkaVersion) % Test
+      akka.slf4j,
+      akka.stream,
+      akka.testkit % Test
     ).map(_.cross(CrossVersion.for3Use2_13)),
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
@@ -120,9 +120,9 @@ lazy val snapshot = (project in file("snapshot"))
   .settings(
     name := "akka-persistence-s3-snapshot",
     libraryDependencies ++= Seq(
-      akka.persistence(akkaVersion),
-      scalatest.scalatest              % Test,
-      akka.persistenceTck(akkaVersion) % Test
+      akka.persistence,
+      scalatest.scalatest % Test,
+      akka.persistenceTck % Test
     ).map(_.cross(CrossVersion.for3Use2_13))
   )
   .dependsOn(base % "test->test;compile->compile")
@@ -132,9 +132,9 @@ lazy val journal = (project in file("journal"))
   .settings(
     name := "akka-persistence-s3-journal",
     libraryDependencies ++= Seq(
-      akka.persistence(akkaVersion),
-      scalatest.scalatest              % Test,
-      akka.persistenceTck(akkaVersion) % Test
+      akka.persistence,
+      scalatest.scalatest % Test,
+      akka.persistenceTck % Test
     ).map(_.cross(CrossVersion.for3Use2_13))
   )
   .dependsOn(base % "test->test;compile->compile", snapshot % "test->comple")
@@ -150,8 +150,8 @@ lazy val benchmark = (project in file("benchmark"))
       slf4j.julToSlf4J
     ),
     libraryDependencies ++= Seq(
-      akka.slf4j(akkaVersion),
-      akka.persistenceTyped(akkaVersion)
+      akka.slf4j,
+      akka.persistenceTyped
     ).map(_.cross(CrossVersion.for3Use2_13))
   )
   .enablePlugins(JmhPlugin)

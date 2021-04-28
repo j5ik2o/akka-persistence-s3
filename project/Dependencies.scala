@@ -11,12 +11,13 @@ object Dependencies {
   }
 
   object akka {
-    def slf4j(version: String): ModuleID            = "com.typesafe.akka" %% "akka-slf4j"             % version
-    def stream(version: String): ModuleID           = "com.typesafe.akka" %% "akka-stream"            % version
-    def testkit(version: String): ModuleID          = "com.typesafe.akka" %% "akka-testkit"           % version
-    def persistence(version: String): ModuleID      = "com.typesafe.akka" %% "akka-persistence"       % version
-    def persistenceTyped(version: String): ModuleID = "com.typesafe.akka" %% "akka-persistence-typed" % version
-    def persistenceTck(version: String): ModuleID   = "com.typesafe.akka" %% "akka-persistence-tck"   % version
+    def slf4j: ModuleID       = "com.typesafe.akka" %% "akka-slf4j"       % Versions.akkaVersion
+    def stream: ModuleID      = "com.typesafe.akka" %% "akka-stream"      % Versions.akkaVersion
+    def testkit: ModuleID     = "com.typesafe.akka" %% "akka-testkit"     % Versions.akkaVersion
+    def persistence: ModuleID = "com.typesafe.akka" %% "akka-persistence" % Versions.akkaVersion
+    def persistenceTyped: ModuleID =
+      "com.typesafe.akka" %% "akka-persistence-typed" % Versions.akkaVersion
+    def persistenceTck: ModuleID = "com.typesafe.akka" %% "akka-persistence-tck" % Versions.akkaVersion
   }
 
   object iheart {
