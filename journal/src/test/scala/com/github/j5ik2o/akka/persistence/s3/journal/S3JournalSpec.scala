@@ -48,8 +48,15 @@ class S3JournalSpec
   override protected def s3BucketName: String = S3JournalSpec.bucketName
 
   override def afterStartContainers(): Unit = {
-    eventually {
-      listBuckets()
+    var b = false
+    while (!b) {
+      try {
+        listBuckets()
+        b = true
+      } catch {
+        case _: Throwable =>
+          Thread.sleep(500)
+      }
     }
     createS3Bucket()
     waitBucket()

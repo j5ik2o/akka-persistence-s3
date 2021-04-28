@@ -3,21 +3,21 @@ import sbt._
 object Dependencies {
 
   object Versions {
-    val scala212Version    = "2.12.10"
-    val scala213Version    = "2.13.5"
-    val akka26Version      = "2.6.10"
-    val akka25Version      = "2.5.32"
-    val scalaTest32Version = "3.2.5"
-    val scalaTest30Version = "3.0.8"
+    val scala212Version  = "2.12.10"
+    val scala213Version  = "2.13.5"
+    val scala3Version    = "3.0.0-RC2"
+    val akkaVersion      = "2.6.10"
+    val scalaTestVersion = "3.2.7"
   }
 
   object akka {
-    def slf4j(version: String): ModuleID            = "com.typesafe.akka" %% "akka-slf4j"             % version
-    def stream(version: String): ModuleID           = "com.typesafe.akka" %% "akka-stream"            % version
-    def testkit(version: String): ModuleID          = "com.typesafe.akka" %% "akka-testkit"           % version
-    def persistence(version: String): ModuleID      = "com.typesafe.akka" %% "akka-persistence"       % version
-    def persistenceTyped(version: String): ModuleID = "com.typesafe.akka" %% "akka-persistence-typed" % version
-    def persistenceTck(version: String): ModuleID   = "com.typesafe.akka" %% "akka-persistence-tck"   % version
+    def slf4j: ModuleID       = "com.typesafe.akka" %% "akka-slf4j"       % Versions.akkaVersion
+    def stream: ModuleID      = "com.typesafe.akka" %% "akka-stream"      % Versions.akkaVersion
+    def testkit: ModuleID     = "com.typesafe.akka" %% "akka-testkit"     % Versions.akkaVersion
+    def persistence: ModuleID = "com.typesafe.akka" %% "akka-persistence" % Versions.akkaVersion
+    def persistenceTyped: ModuleID =
+      "com.typesafe.akka" %% "akka-persistence-typed" % Versions.akkaVersion
+    def persistenceTck: ModuleID = "com.typesafe.akka" %% "akka-persistence-tck" % Versions.akkaVersion
   }
 
   object iheart {
@@ -38,22 +38,15 @@ object Dependencies {
   }
 
   object j5ik2o {
-    val version = "1.1.0"
+    val version = "1.1.1"
     val dockerControllerScalaScalatest =
       "com.github.j5ik2o" %% "docker-controller-scala-scalatest" % version
     val dockerControllerScalaMinio =
       "com.github.j5ik2o" %% "docker-controller-scala-minio" % version
-    val dockerControllerScalaLocalstack =
-      "com.github.j5ik2o" %% "docker-controller-scala-localstack" % version
-    //   val reactiveAwsS3: ModuleID = "com.github.j5ik2o" %% "reactive-aws-s3-core" % "1.2.6"
-  }
-
-  object scalacheck {
-    val scalacheck: ModuleID = "org.scalacheck" %% "scalacheck" % "1.15.3"
   }
 
   object scalatest {
-    def scalatest(version: String): ModuleID = "org.scalatest" %% "scalatest" % version
+    def scalatest: ModuleID = "org.scalatest" %% "scalatest" % Versions.scalaTestVersion
   }
 
   object scala {
@@ -68,23 +61,5 @@ object Dependencies {
   object typesafe {
     val config: ModuleID = "com.typesafe" % "config" % "1.4.1"
   }
-
-//  object testcontainers {
-//    val testcontainersVersion              = "1.15.3"
-//    val testcontainers: ModuleID           = "org.testcontainers" % "testcontainers" % testcontainersVersion
-//    val testcontainersLocalStack: ModuleID = "org.testcontainers" % "localstack"     % testcontainersVersion
-//    val testcontainersKafka: ModuleID      = "org.testcontainers" % "kafka"          % testcontainersVersion
-//  }
-
-//  object dimafeng {
-//    val testcontainersScalaVersion   = "0.39.3"
-//    val testcontainerScala: ModuleID = "com.dimafeng" %% "testcontainers-scala" % testcontainersScalaVersion
-//    val testcontainerScalaScalaTest: ModuleID =
-//      "com.dimafeng" %% "testcontainers-scala-scalatest" % testcontainersScalaVersion
-//    //    val testcontainerScalaMsql       = "com.dimafeng" %% "testcontainers-scala-mysql" % testcontainersScalaVersion
-//    val testcontainerScalaKafka: ModuleID = "com.dimafeng" %% "testcontainers-scala-kafka" % testcontainersScalaVersion
-//    val testcontainerScalaLocalstack: ModuleID =
-//      "com.dimafeng" %% "testcontainers-scala-localstack" % testcontainersScalaVersion
-//  }
 
 }
