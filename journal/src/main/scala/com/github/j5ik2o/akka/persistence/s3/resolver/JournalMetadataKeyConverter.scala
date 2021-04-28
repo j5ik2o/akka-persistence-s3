@@ -1,6 +1,6 @@
 package com.github.j5ik2o.akka.persistence.s3.resolver
 
-import com.github.j5ik2o.akka.persistence.s3.base.model.{ PersistenceId, SequenceNumber }
+import com.github.j5ik2o.akka.persistence.s3.base.model.SequenceNumber
 import com.github.j5ik2o.akka.persistence.s3.base.resolver.Key
 import com.typesafe.config.Config
 

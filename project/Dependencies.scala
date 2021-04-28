@@ -42,8 +42,6 @@ object Dependencies {
       "com.github.j5ik2o" %% "docker-controller-scala-scalatest" % version
     val dockerControllerScalaMinio =
       "com.github.j5ik2o" %% "docker-controller-scala-minio" % version
-    val dockerControllerScalaLocalstack =
-      "com.github.j5ik2o" %% "docker-controller-scala-localstack" % version
   }
 
   object scalatest {
