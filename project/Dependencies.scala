@@ -50,7 +50,7 @@ object Dependencies {
   }
 
   object scala {
-    val collectionCompat: ModuleID         = "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.3"
+    val collectionCompat: ModuleID         = "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.4"
     def reflect(version: String): ModuleID = "org.scala-lang"          % "scala-reflect"           % version
   }
 
