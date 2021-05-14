@@ -18,8 +18,6 @@ def crossScalacOptions(scalaVersion: String): Seq[String] =
         "-Yrangepos",
         "-Ywarn-unused"
       )
-    case Some((2L, scalaMajor)) if scalaMajor <= 11 =>
-      Seq("-Yinline-warnings")
   }
 
 val coreSettings = Seq(
