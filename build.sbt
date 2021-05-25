@@ -33,7 +33,7 @@ val coreSettings = Seq(
     )
   ),
   scalaVersion := scala213Version,
-  crossScalaVersions ++= Seq(scala212Version, scala213Version, scala3Version),
+  crossScalaVersions ++= Seq(scala212Version, scala213Version),
   scalacOptions ++= (Seq(
     "-unchecked",
     "-feature",
@@ -52,8 +52,7 @@ val coreSettings = Seq(
   semanticdbVersion := scalafixSemanticdb.revision,
   Test / fork := true,
   Test / publishArtifact := false,
-  Test / parallelExecution := false,
-  packageDoc / publishArtifact := false
+  Test / parallelExecution := false
 )
 
 
