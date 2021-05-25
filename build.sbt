@@ -56,6 +56,7 @@ val coreSettings = Seq(
   packageDoc / publishArtifact := false
 )
 
+
 lazy val test = (project in file("test"))
   .settings(coreSettings)
   .settings(
