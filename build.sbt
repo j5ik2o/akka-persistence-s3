@@ -33,7 +33,7 @@ val coreSettings = Seq(
     )
   ),
   scalaVersion := scala213Version,
-  crossScalaVersions ++= Seq(scala212Version, scala213Version),
+  crossScalaVersions ++= Seq(scala212Version, scala213Version, scala3Version),
   scalacOptions ++= (Seq(
     "-unchecked",
     "-feature",
@@ -164,7 +164,7 @@ lazy val root = (project in file("."))
   .settings(coreSettings)
   .settings(
     name := "akka-persistence-s3-root",
-    publish / skip := true
+//    publish / skip := true
   )
   .aggregate(base, journal, snapshot)
 
