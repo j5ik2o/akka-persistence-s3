@@ -52,7 +52,8 @@ val coreSettings = Seq(
   semanticdbVersion := scalafixSemanticdb.revision,
   Test / fork := true,
   Test / publishArtifact := false,
-  Test / parallelExecution := false
+  Test / parallelExecution := false,
+  packageDoc / publishArtifact := false
 )
 
 lazy val test = (project in file("test"))
