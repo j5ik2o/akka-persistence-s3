@@ -32,7 +32,7 @@ val coreSettings = Seq(
       url = url("https://blog.j5ik2o.me")
     )
   ),
-  scalaVersion := scala3Version,
+  scalaVersion := scala213Version,
   crossScalaVersions ++= Seq(scala212Version, scala213Version, scala3Version),
   scalacOptions ++= (Seq(
     "-unchecked",
