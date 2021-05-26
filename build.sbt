@@ -32,8 +32,8 @@ val coreSettings = Seq(
       url = url("https://blog.j5ik2o.me")
     )
   ),
-  scalaVersion := scala213Version,
-  crossScalaVersions ++= Seq(scala212Version, scala213Version),
+  scalaVersion := scala3Version,
+  crossScalaVersions ++= Seq(scala212Version, scala213Version, scala3Version),
   scalacOptions ++= (Seq(
     "-unchecked",
     "-feature",
@@ -52,7 +52,15 @@ val coreSettings = Seq(
   semanticdbVersion := scalafixSemanticdb.revision,
   Test / fork := true,
   Test / publishArtifact := false,
-  Test / parallelExecution := false
+  Test / parallelExecution := false,
+  Compile / doc / sources := {
+    val old = (Compile / doc / sources).value
+    if (scalaVersion.value == scala3Version) {
+      Nil
+    } else {
+      old
+    }
+  }
 )
 
 lazy val test = (project in file("test"))
