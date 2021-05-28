@@ -32,7 +32,7 @@ object Dependencies {
   object software {
 
     object awssdk {
-      val s3 = "software.amazon.awssdk" % "s3" % "2.16.73"
+      val s3 = "software.amazon.awssdk" % "s3" % "2.16.74"
     }
 
   }
