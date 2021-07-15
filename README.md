@@ -52,6 +52,7 @@ j5ik2o {
       access-key-id = "..."
       secret-access-key = "..."
       endpoint = "..."
+      region = "..."
       max-concurrency = 128
       max-pending-connection-acquires = ?
       read-timeout = 3 s
