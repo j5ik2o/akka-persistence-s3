@@ -171,7 +171,7 @@ lazy val root = (project in file("."))
   .settings(coreSettings)
   .settings(
     name := "akka-persistence-s3-root"
-//    publish / skip := true
+    publish / skip := true
   )
   .aggregate(base, journal, snapshot)
 
