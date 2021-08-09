@@ -69,10 +69,10 @@ lazy val test = (project in file("test"))
     name := "akka-persistence-s3-test",
     libraryDependencies ++= Seq(
       typesafe.config,
-      software.awssdk.s3,
-      scalatest.scalatest
+      software.awssdk.s3
     ),
     libraryDependencies ++= Seq(
+      scalatest.scalatest,
       j5ik2o.dockerControllerScalaScalatest,
       j5ik2o.dockerControllerScalaMinio
     ).map(_.cross(CrossVersion.for3Use2_13)),
@@ -126,9 +126,7 @@ lazy val snapshot = (project in file("snapshot"))
   .settings(
     name := "akka-persistence-s3-snapshot",
     libraryDependencies ++= Seq(
-      scalatest.scalatest % Test
-    ),
-    libraryDependencies ++= Seq(
+      scalatest.scalatest % Test,
       akka.persistence,
       akka.persistenceTck % Test
     ).map(_.cross(CrossVersion.for3Use2_13))
@@ -140,9 +138,7 @@ lazy val journal = (project in file("journal"))
   .settings(
     name := "akka-persistence-s3-journal",
     libraryDependencies ++= Seq(
-      scalatest.scalatest % Test
-    ),
-    libraryDependencies ++= Seq(
+      scalatest.scalatest % Test,
       akka.persistence,
       akka.persistenceTck % Test
     ).map(_.cross(CrossVersion.for3Use2_13))
