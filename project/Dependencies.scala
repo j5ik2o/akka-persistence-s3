@@ -21,7 +21,7 @@ object Dependencies {
   }
 
   object iheart {
-    val ficus = "com.iheart" %% "ficus" % "1.5.0"
+    val ficus = "com.iheart" %% "ficus" % "1.5.1"
   }
 
   object slf4j {
