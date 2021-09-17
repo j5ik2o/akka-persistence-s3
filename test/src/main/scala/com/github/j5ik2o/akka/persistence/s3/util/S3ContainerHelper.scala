@@ -21,13 +21,14 @@ trait S3ContainerHelper extends DockerControllerHelper {
   protected def minioPort: Int
 
   protected val minioController: MinioController =
-    MinioController(dockerClient)(minioPort, minioAccessKeyId, minioSecretAccessKey).configureCmds {
-      CmdConfigures(
-        removeContainerCmdConfigure = {
-          _.withForce(true)
-        }
-      )
-    }.asInstanceOf[MinioController]
+    MinioController(dockerClient)(minioPort, minioAccessKeyId, minioSecretAccessKey)
+      .configureCmds {
+        CmdConfigures(
+          removeContainerCmdConfigure = {
+            _.withForce(true)
+          }
+        )
+      }.asInstanceOf[MinioController]
 
   override protected val dockerControllers: Vector[DockerController] = Vector(minioController)
 
