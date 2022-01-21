@@ -17,7 +17,6 @@ trait BenchmarkHelper extends S3ContainerHelper {
 
   @Setup
   def setup(): Unit = {
-    minioContainer.start()
     Thread.sleep(1000)
     val config =
       ConfigHelper.config(
@@ -36,7 +35,6 @@ trait BenchmarkHelper extends S3ContainerHelper {
 
   @TearDown
   def tearDown(): Unit = {
-    minioContainer.stop()
     system.terminate()
   }
 }

@@ -1,12 +1,12 @@
 package com.github.j5ik2o.akka.persistence.s3.base.metrics
 
 import java.util.UUID
-
 import akka.actor.DynamicAccess
 import com.github.j5ik2o.akka.persistence.s3.base.config.PluginConfig
 import com.github.j5ik2o.akka.persistence.s3.base.exception.PluginException
 import com.github.j5ik2o.akka.persistence.s3.base.model.PersistenceId
 
+import scala.annotation.unused
 import scala.collection.immutable._
 import scala.util.{ Failure, Success }
 
@@ -20,56 +20,56 @@ trait Context {
 trait MetricsReporter {
 
   def beforeJournalAsyncWriteMessages(context: Context): Context = { context }
-  def afterJournalAsyncWriteMessages(context: Context): Unit = {}
-  def errorJournalAsyncWriteMessages(context: Context, ex: Throwable): Unit = {}
+  def afterJournalAsyncWriteMessages(@unused context: Context): Unit = {}
+  def errorJournalAsyncWriteMessages(@unused context: Context, @unused ex: Throwable): Unit = {}
 
   def beforeJournalAsyncDeleteMessagesTo(context: Context): Context = { context }
-  def afterJournalAsyncDeleteMessagesTo(context: Context): Unit = {}
-  def errorJournalAsyncDeleteMessagesTo(context: Context, ex: Throwable): Unit = {}
+  def afterJournalAsyncDeleteMessagesTo(@unused context: Context): Unit = {}
+  def errorJournalAsyncDeleteMessagesTo(@unused context: Context, @unused ex: Throwable): Unit = {}
 
   def beforeJournalAsyncReplayMessages(context: Context): Context = { context }
-  def afterJournalAsyncReplayMessages(context: Context): Unit = {}
-  def errorJournalAsyncReplayMessages(context: Context, ex: Throwable): Unit = {}
+  def afterJournalAsyncReplayMessages(@unused context: Context): Unit = {}
+  def errorJournalAsyncReplayMessages(@unused context: Context, @unused ex: Throwable): Unit = {}
 
   def beforeJournalAsyncReadHighestSequenceNr(context: Context): Context = { context }
-  def afterJournalAsyncReadHighestSequenceNr(context: Context): Unit = {}
-  def errorJournalAsyncReadHighestSequenceNr(context: Context, ex: Throwable): Unit = {}
+  def afterJournalAsyncReadHighestSequenceNr(@unused context: Context): Unit = {}
+  def errorJournalAsyncReadHighestSequenceNr(@unused context: Context, @unused ex: Throwable): Unit = {}
 
   def beforeJournalAsyncUpdateEvent(context: Context): Context = { context }
-  def afterJournalAsyncUpdateEvent(context: Context): Unit = {}
-  def errorJournalAsyncUpdateEvent(context: Context, ex: Throwable): Unit = {}
+  def afterJournalAsyncUpdateEvent(@unused context: Context): Unit = {}
+  def errorJournalAsyncUpdateEvent(@unused context: Context, @unused ex: Throwable): Unit = {}
 
   def beforeJournalSerializeJournal(context: Context): Context = { context }
-  def afterJournalSerializeJournal(context: Context): Unit = {}
-  def errorJournalSerializeJournal(context: Context, ex: Throwable): Unit = {}
+  def afterJournalSerializeJournal(@unused context: Context): Unit = {}
+  def errorJournalSerializeJournal(@unused context: Context, @unused ex: Throwable): Unit = {}
 
   def beforeJournalDeserializeJournal(context: Context): Context = { context }
-  def afterJournalDeserializeJournal(context: Context): Unit = {}
-  def errorJournalDeserializeJournal(context: Context, ex: Throwable): Unit = {}
+  def afterJournalDeserializeJournal(@unused context: Context): Unit = {}
+  def errorJournalDeserializeJournal(@unused context: Context, @unused ex: Throwable): Unit = {}
 
   def beforeSnapshotStoreLoadAsync(context: Context): Context = { context }
-  def afterSnapshotStoreLoadAsync(context: Context): Unit = {}
-  def errorSnapshotStoreLoadAsync(context: Context, ex: Throwable): Unit = {}
+  def afterSnapshotStoreLoadAsync(@unused context: Context): Unit = {}
+  def errorSnapshotStoreLoadAsync(@unused context: Context, @unused ex: Throwable): Unit = {}
 
   def beforeSnapshotStoreSaveAsync(context: Context): Context = { context }
-  def afterSnapshotStoreSaveAsync(context: Context): Unit = {}
-  def errorSnapshotStoreSaveAsync(context: Context, ex: Throwable): Unit = {}
+  def afterSnapshotStoreSaveAsync(@unused context: Context): Unit = {}
+  def errorSnapshotStoreSaveAsync(@unused context: Context, @unused ex: Throwable): Unit = {}
 
   def beforeSnapshotStoreDeleteAsync(context: Context): Context = { context }
-  def afterSnapshotStoreDeleteAsync(context: Context): Unit = {}
-  def errorSnapshotStoreDeleteAsync(context: Context, ex: Throwable): Unit = {}
+  def afterSnapshotStoreDeleteAsync(@unused context: Context): Unit = {}
+  def errorSnapshotStoreDeleteAsync(@unused context: Context, @unused ex: Throwable): Unit = {}
 
   def beforeSnapshotStoreDeleteWithCriteriaAsync(context: Context): Context = { context }
-  def afterSnapshotStoreDeleteWithCriteriaAsync(context: Context): Unit = {}
-  def errorSnapshotStoreDeleteWithCriteriaAsync(context: Context, ex: Throwable): Unit = {}
+  def afterSnapshotStoreDeleteWithCriteriaAsync(@unused context: Context): Unit = {}
+  def errorSnapshotStoreDeleteWithCriteriaAsync(@unused context: Context, @unused ex: Throwable): Unit = {}
 
   def beforeSnapshotStoreSerializeSnapshot(context: Context): Context = { context }
-  def afterSnapshotStoreSerializeSnapshot(context: Context): Unit = {}
-  def errorSnapshotStoreSerializeSnapshot(context: Context, ex: Throwable): Unit = {}
+  def afterSnapshotStoreSerializeSnapshot(@unused context: Context): Unit = {}
+  def errorSnapshotStoreSerializeSnapshot(@unused context: Context, @unused ex: Throwable): Unit = {}
 
   def beforeSnapshotStoreDeserializeSnapshot(context: Context): Context = { context }
-  def afterSnapshotStoreDeserializeSnapshot(context: Context): Unit = {}
-  def errorSnapshotStoreDeserializeSnapshot(context: Context, ex: Throwable): Unit = {}
+  def afterSnapshotStoreDeserializeSnapshot(@unused context: Context): Unit = {}
+  def errorSnapshotStoreDeserializeSnapshot(@unused context: Context, @unused ex: Throwable): Unit = {}
 }
 
 object MetricsReporter {
@@ -81,7 +81,7 @@ object MetricsReporter {
   def newContext(id: UUID, persistenceId: PersistenceId, data: Option[Any] = scala.None): Context =
     DefaultContext(id, persistenceId, data)
 
-  class None(pluginConfig: PluginConfig) extends MetricsReporter {
+  class None(@unused pluginConfig: PluginConfig) extends MetricsReporter {
     override def beforeJournalAsyncWriteMessages(context: Context): Context = { context }
     override def afterJournalAsyncWriteMessages(context: Context): Unit = {}
     override def errorJournalAsyncWriteMessages(context: Context, ex: Throwable): Unit = {}

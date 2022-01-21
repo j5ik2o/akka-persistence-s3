@@ -24,15 +24,14 @@ import software.amazon.awssdk.services.s3.model._
 
 import java.util.UUID
 import scala.collection.immutable
-import scala.collection.immutable.{ Nil, Seq }
+import scala.collection.immutable.Seq
 import scala.compat.java8.FutureConverters._
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.jdk.CollectionConverters._
 import scala.util.{ Failure, Success, Try }
 
 class S3Journal(config: Config) extends AsyncWriteJournal {
   implicit val system: ActorSystem = context.system
-  import system.dispatcher
 
   private sealed trait FlowControl
 
@@ -121,23 +120,26 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
     val context       = MetricsReporter.newContext(UUID.randomUUID(), pid)
     val newContext    = metricsReporter.fold(context)(_.beforeJournalAsyncWriteMessages(context))
 
-    val serializedTries = serializer.serialize(atomicWrites)
-    val rowsToWrite = for {
-      serializeTry <- serializedTries
-      row <- serializeTry match {
-        case Right(value) => value
-        case Left(_)      => Seq.empty
+    implicit val ec: ExecutionContext = system.dispatcher
+
+    val serializedFutures = serializer.serialize(atomicWrites)
+    val rowsToWriteFutures = serializedFutures.map { serializeFuture =>
+      serializeFuture.recoverWith { case _ =>
+        Future.successful(Seq.empty)
       }
-    } yield row
-    def resultWhenWriteComplete =
-      if (serializedTries.forall(_.isRight))
-        Nil
-      else
-        serializedTries.map {
-          case Right(_) => Right(())
-          case Left(ex) => Left(ex)
+    }
+
+    def resultWhenWriteComplete(implicit ec: ExecutionContext): Future[Vector[Future[Unit]]] = {
+      Future.sequence(serializedFutures).map(_ => true).recover { case _ => false }.map { b =>
+        if (b) {
+          Vector.empty
+        } else {
+          serializedFutures.toVector.map(s => s.map(_ => ()))
         }
-    def putObject(journalRow: JournalRow): Future[PutObjectResponse] = {
+      }
+    }
+
+    def putObject(journalRow: JournalRow)(implicit ec: ExecutionContext): Future[PutObjectResponse] = {
       val key = resolveKey(journalRow.persistenceId, journalRow.sequenceNumber)
       val req = PutObjectRequest
         .builder()
@@ -155,31 +157,53 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
           )
       }
     }
-    val future = rowsToWrite
-      .foldLeft(Future.successful(Vector.empty[PutObjectResponse])) { case (result, journalRow) =>
-        for {
-          r <- result
-          e <- putObject(journalRow)
-        } yield r :+ e
+
+    def execute(implicit ec: ExecutionContext) = Future
+      .traverse(rowsToWriteFutures) { rowsToWriteFuture =>
+        rowsToWriteFuture.flatMap { rowsToWrite =>
+          rowsToWrite.foldLeft(Future.successful(Vector.empty[PutObjectResponse])) { case (result, journalRow) =>
+            for {
+              r <- result
+              e <- putObject(journalRow)
+            } yield r :+ e
+          }
+        }
+      }.flatMap { _ =>
+        resultWhenWriteComplete.flatMap { f =>
+          f.foldLeft(Future(Vector.empty[Try[Unit]])) { (result, element) =>
+            (for {
+              r <- result
+              e <- element
+            } yield r :+ Success(e))
+              .recoverWith { case ex =>
+                result.map { r => r :+ Failure(ex) }
+              }
+          }
+        }
       }
-      .map { _ =>
-        resultWhenWriteComplete.map {
-          case Right(value) =>
-            metricsReporter.foreach(_.afterJournalAsyncWriteMessages(newContext))
-            Success(value)
-          case Left(ex) =>
-            metricsReporter.foreach(_.errorJournalAsyncWriteMessages(newContext, ex))
-            Failure(ex)
-        }.toVector
+
+    val future = execute
+
+    future.onComplete { result: Try[Seq[Try[Unit]]] =>
+      result match {
+        case Success(_) =>
+          metricsReporter.foreach(_.afterJournalAsyncWriteMessages(newContext))
+        case Failure(ex) =>
+          metricsReporter.foreach(_.errorJournalAsyncWriteMessages(newContext, ex))
       }
+    }
+
     future
   }
 
   override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] = {
+    implicit val ec: ExecutionContext = system.dispatcher
+
     val pid        = PersistenceId(persistenceId)
     val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
     val newContext = metricsReporter.fold(context)(_.beforeJournalAsyncDeleteMessagesTo(context))
-    def deleteObject(pid: PersistenceId, obj: S3Object): Future[DeleteObjectResponse] = {
+
+    def deleteObject(pid: PersistenceId, obj: S3Object)(implicit ec: ExecutionContext): Future[DeleteObjectResponse] = {
       val req = DeleteObjectRequest.builder().bucket(resolveBucketName(pid)).key(obj.key()).build()
       s3AsyncClient.deleteObject(req).toScala.flatMap { res =>
         if (res.sdkHttpResponse().isSuccessful)
@@ -192,10 +216,14 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
           )
       }
     }
-    def copyObject(pid: PersistenceId, obj: S3Object, seqNr: Long): Future[CopyObjectResponse] = {
+
+    def copyObject(pid: PersistenceId, obj: S3Object, seqNr: Long)(implicit
+        ec: ExecutionContext
+    ): Future[CopyObjectResponse] = {
       val req = CopyObjectRequest
         .builder()
-        .copySource(resolveBucketName(pid) + "/" + obj.key())
+        .sourceBucket(resolveBucketName(pid))
+        .sourceKey(obj.key())
         .destinationBucket(resolveBucketName(pid))
         .destinationKey(resolveKey(pid, SequenceNumber(seqNr), deleted = true))
         .build()
@@ -210,7 +238,8 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
           )
       }
     }
-    val future = listObjectsSource(pid, listObjectsBatchSize)
+
+    def execute(implicit ec: ExecutionContext) = listObjectsSource(pid, listObjectsBatchSize)
       .log("list-objects")
       .mapConcat { res =>
         if (res.hasContents)
@@ -226,7 +255,7 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
         else
           Vector.empty
       }
-      .mapAsync(1) { case (obj, persistenceId, seqNr) =>
+      .mapAsync(1) { case (obj, _, seqNr) =>
         for {
           _   <- copyObject(pid, obj, seqNr)
           res <- deleteObject(pid, obj)
@@ -235,6 +264,9 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
       .withAttributes(logLevels)
       .runWith(Sink.ignore)
       .map(_ => ())
+
+    val future = execute
+
     future.onComplete {
       case Success(_) =>
         metricsReporter.foreach(_.afterJournalAsyncDeleteMessagesTo(newContext))
@@ -247,10 +279,13 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
       recoveryCallback: PersistentRepr => Unit
   ): Future[Unit] = {
+    implicit val ec: ExecutionContext = system.dispatcher
+
     val pid        = PersistenceId(persistenceId)
     val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
     val newContext = metricsReporter.fold(context)(_.beforeJournalAsyncReplayMessages(context))
-    def getObject(pid: PersistenceId, key: Key) = {
+
+    def getObject(pid: PersistenceId, key: Key)(implicit ec: ExecutionContext): Future[Array[Byte]] = {
       val req = GetObjectRequest
         .builder()
         .bucket(resolveBucketName(pid))
@@ -267,8 +302,10 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
           )
       }
     }
+
     val fromSeqNr = Math.max(1, fromSequenceNr)
-    val s =
+
+    val source =
       if (max == 0 || fromSeqNr > toSequenceNr)
         Source.empty
       else {
@@ -301,26 +338,32 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
           }
           .take(max)
       }
-    val future = s
+
+    val future = source
       .withAttributes(logLevels)
       .runForeach { result =>
         result.foreach(recoveryCallback)
       }
       .map(_ => ())
+
     future.onComplete {
       case Success(_) =>
         metricsReporter.foreach(_.afterJournalAsyncReplayMessages(newContext))
       case Failure(ex) =>
         metricsReporter.foreach(_.errorJournalAsyncReplayMessages(newContext, ex))
     }
+
     future
   }
 
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] = {
+    implicit val ec: ExecutionContext = system.dispatcher
+
     val pid        = PersistenceId(persistenceId)
     val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
     val newContext = metricsReporter.fold(context)(_.beforeJournalAsyncReadHighestSequenceNr(context))
-    val fromSeqNr  = Math.max(1, fromSequenceNr)
+
+    val fromSeqNr = Math.max(1, fromSequenceNr)
     val future = listObjectsSource(pid, listObjectsBatchSize)
       .log("list-objects")
       .mapConcat { res =>
@@ -338,21 +381,21 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
       }
       .fold(Vector.empty[(String, Long)])(_ :+ _)
       .map(_.sortWith(_._2 < _._2))
-      .map {
-        _.lastOption.fold(0L)(_._2)
-      }
+      .map(_.lastOption.fold(0L)(_._2))
       .withAttributes(logLevels)
       .runWith(Sink.head)
+
     future.onComplete {
       case Success(_) =>
         metricsReporter.foreach(_.afterJournalAsyncReadHighestSequenceNr(newContext))
       case Failure(ex) =>
         metricsReporter.foreach(_.errorJournalAsyncReadHighestSequenceNr(newContext, ex))
     }
+
     future
   }
 
-  private def listObjectsSource(persistenceId: PersistenceId, batchSize: Int) = {
+  private def listObjectsSource(persistenceId: PersistenceId, batchSize: Int)(implicit ec: ExecutionContext) = {
     var builder = ListObjectsV2Request
       .builder()
       .bucket(resolveBucketName(persistenceId))
