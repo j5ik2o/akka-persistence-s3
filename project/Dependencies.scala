@@ -7,7 +7,7 @@ object Dependencies {
     val scala213Version  = "2.13.8"
     val scala3Version    = "3.0.2"
     val akkaVersion      = "2.6.10"
-    val scalaTestVersion = "3.2.9"
+    val scalaTestVersion = "3.2.11"
   }
 
   object akka {
@@ -25,14 +25,14 @@ object Dependencies {
   }
 
   object slf4j {
-    val api: ModuleID        = "org.slf4j" % "slf4j-api"    % "1.7.32"
+    val api: ModuleID        = "org.slf4j" % "slf4j-api"    % "1.7.35"
     val julToSlf4J: ModuleID = "org.slf4j" % "jul-to-slf4j" % "1.7.30"
   }
 
   object software {
 
     object awssdk {
-      val s3 = "software.amazon.awssdk" % "s3" % "2.17.35"
+      val s3 = "software.amazon.awssdk" % "s3" % "2.17.118"
     }
 
   }
