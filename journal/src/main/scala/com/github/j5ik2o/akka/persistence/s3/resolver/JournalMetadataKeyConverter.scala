@@ -4,6 +4,7 @@ import com.github.j5ik2o.akka.persistence.s3.base.model.SequenceNumber
 import com.github.j5ik2o.akka.persistence.s3.base.resolver.Key
 import com.typesafe.config.Config
 
+import scala.annotation.unused
 import scala.util.matching.Regex
 
 trait JournalMetadataKeyConverter {
@@ -17,7 +18,7 @@ trait JournalMetadataKeyConverter {
 
 object JournalMetadataKeyConverter {
 
-  class PersistenceId(config: Config) extends JournalMetadataKeyConverter {
+  class PersistenceId(@unused config: Config) extends JournalMetadataKeyConverter {
     override def convertTo(journalKeyMetadata: JournalMetadataKey, extensionName: String): Key = {
       val deleted =
         if (journalKeyMetadata.deleted) "inactive"

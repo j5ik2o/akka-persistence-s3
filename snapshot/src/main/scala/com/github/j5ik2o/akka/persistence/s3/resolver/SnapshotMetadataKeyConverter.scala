@@ -4,6 +4,7 @@ import akka.persistence.SnapshotMetadata
 import com.github.j5ik2o.akka.persistence.s3.base.resolver.Key
 import com.typesafe.config.Config
 
+import scala.annotation.unused
 import scala.util.matching.Regex
 
 trait SnapshotMetadataKeyConverter {
@@ -16,7 +17,7 @@ trait SnapshotMetadataKeyConverter {
 
 object SnapshotMetadataKeyConverter {
 
-  class PersistenceId(config: Config) extends SnapshotMetadataKeyConverter {
+  class PersistenceId(@unused config: Config) extends SnapshotMetadataKeyConverter {
     override def convertTo(snapshotMetadata: SnapshotMetadata, extensionName: String): Key =
       s"${snapshotMetadata.persistenceId}/${snapshotMetadata.sequenceNr.toString.reverse}-${snapshotMetadata.timestamp}.$extensionName"
 
