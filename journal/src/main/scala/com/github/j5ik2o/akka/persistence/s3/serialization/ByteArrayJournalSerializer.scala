@@ -32,7 +32,7 @@ class ByteArrayJournalSerializer(
     metricsReporter: Option[MetricsReporter]
 ) extends FlowPersistentReprSerializer[JournalRow] {
 
-  private def serializer: Future[Serializer] = {
+  private def serializerAsync: Future[Serializer] = {
     try Future.successful(serialization.serializerFor(classOf[PersistentRepr]))
     catch {
       case ex: Throwable =>
@@ -40,7 +40,7 @@ class ByteArrayJournalSerializer(
     }
   }
 
-  private def toBinary(serializer: Serializer, persistentRepr: PersistentRepr): Future[Array[Byte]] = {
+  private def toBinaryAsync(serializer: Serializer, persistentRepr: PersistentRepr): Future[Array[Byte]] = {
     serializer match {
       case async: AsyncSerializer =>
         async.toBinaryAsync(persistentRepr)
@@ -53,7 +53,7 @@ class ByteArrayJournalSerializer(
     }
   }
 
-  private def fromBinary(serializer: Serializer, data: Array[Byte])(implicit
+  private def fromBinaryAsync(serializer: Serializer, data: Array[Byte])(implicit
       ec: ExecutionContext
   ): Future[PersistentRepr] = {
     val future = serializer match {
@@ -79,8 +79,8 @@ class ByteArrayJournalSerializer(
     val newContext = metricsReporter.fold(context)(_.beforeJournalSerializeJournal(context))
 
     val future = for {
-      serializer <- serializer
-      serialized <- toBinary(serializer, persistentRepr)
+      serializer <- serializerAsync
+      serialized <- toBinaryAsync(serializer, persistentRepr)
     } yield JournalRow(
       PersistenceId(persistentRepr.persistenceId),
       SequenceNumber(persistentRepr.sequenceNr),
@@ -108,8 +108,8 @@ class ByteArrayJournalSerializer(
     val newContext = metricsReporter.fold(context)(_.beforeJournalDeserializeJournal(context))
 
     val future = for {
-      serializer   <- serializer
-      deserialized <- fromBinary(serializer, journalRow.message)
+      serializer   <- serializerAsync
+      deserialized <- fromBinaryAsync(serializer, journalRow.message)
     } yield (deserialized, decodeTags(journalRow.tags, separator), journalRow.ordering)
 
     future.onComplete {
