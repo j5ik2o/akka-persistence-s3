@@ -91,7 +91,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     keyConverter.convertFrom(s.key(), extensionName)
   }
 
-  private def serializerFuture: Future[Serializer] = {
+  private def serializerAsync: Future[Serializer] = {
     try Future.successful(serialization.serializerFor(classOf[Snapshot]))
     catch {
       case ex: Throwable =>
@@ -106,7 +106,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreDeserializeSnapshot(context))
 
     val resultFuture = for {
-      serializer <- serializerFuture
+      serializer <- serializerAsync
       deserialized <- serializer match {
         case asyncSerializer: AsyncSerializer =>
           asyncSerializer.toBinaryAsync(bytes)
@@ -129,7 +129,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     resultFuture
   }
 
-  private def serialize(metadata: SnapshotMetadata, snapshot: Snapshot)(implicit
+  private def serializeAsync(metadata: SnapshotMetadata, snapshot: Snapshot)(implicit
       ec: ExecutionContext
   ): Future[Array[Byte]] = {
     val pid        = PersistenceId(metadata.persistenceId)
@@ -137,7 +137,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreSerializeSnapshot(context))
 
     val serializedFuture = for {
-      serializer <- serializerFuture
+      serializer <- serializerAsync
       serialized <- serializer match {
         case asyncSerializer: AsyncSerializer =>
           asyncSerializer.toBinaryAsync(snapshot)
@@ -187,7 +187,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     val newContext                    = metricsReporter.fold(context)(_.beforeSnapshotStoreSaveAsync(context))
 
     val future = for {
-      serialized <- serialize(snapshotMetadata, Snapshot(snapshot))
+      serialized <- serializeAsync(snapshotMetadata, Snapshot(snapshot))
       putObjectRequest = PutObjectRequest
         .builder()
         .contentLength(serialized.length.toLong)
