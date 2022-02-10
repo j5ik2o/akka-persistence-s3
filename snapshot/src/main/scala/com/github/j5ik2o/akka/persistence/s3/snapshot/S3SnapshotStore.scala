@@ -1,17 +1,17 @@
 package com.github.j5ik2o.akka.persistence.s3.snapshot
 
 import akka.actor.{ ActorSystem, DynamicAccess, ExtendedActorSystem }
-import akka.persistence.serialization.Snapshot
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
-import akka.serialization.{ AsyncSerializer, Serialization, SerializationExtension, Serializer }
+import akka.serialization.{ Serialization, SerializationExtension }
 import com.github.j5ik2o.akka.persistence.s3.base.config.S3ClientConfig
 import com.github.j5ik2o.akka.persistence.s3.base.metrics.{ MetricsReporter, MetricsReporterProvider }
-import com.github.j5ik2o.akka.persistence.s3.base.model.PersistenceId
+import com.github.j5ik2o.akka.persistence.s3.base.model.{ PersistenceId, SequenceNumber }
 import com.github.j5ik2o.akka.persistence.s3.base.resolver.PathPrefixResolver
 import com.github.j5ik2o.akka.persistence.s3.base.utils.{ HttpClientBuilderUtils, S3ClientBuilderUtils }
 import com.github.j5ik2o.akka.persistence.s3.config.SnapshotPluginConfig
 import com.github.j5ik2o.akka.persistence.s3.resolver.{ SnapshotBucketNameResolver, SnapshotMetadataKeyConverter }
+import com.github.j5ik2o.akka.persistence.s3.serialization.ByteArraySnapshotSerializer
 import com.typesafe.config.Config
 import software.amazon.awssdk.core.async.{ AsyncRequestBody, AsyncResponseTransformer }
 import software.amazon.awssdk.services.s3.model._
@@ -69,8 +69,6 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       .getOrElse(throw new ClassNotFoundException(pathPrefixResolverClassName))
   }
 
-  private val serialization: Serialization = SerializationExtension(system)
-
   private def resolvePathPrefix(
       persistenceId: PersistenceId
   ): Option[String] = {
@@ -91,73 +89,9 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     keyConverter.convertFrom(s.key(), extensionName)
   }
 
-  private def serializerAsync: Future[Serializer] = {
-    try Future.successful(serialization.serializerFor(classOf[Snapshot]))
-    catch {
-      case ex: Throwable =>
-        Future.failed(ex)
-    }
-  }
+  private val serialization: Serialization = SerializationExtension(system)
 
-  protected def deserialize(metadata: SnapshotMetadata, bytes: Array[Byte])(implicit
-      ec: ExecutionContext
-  ): Future[Snapshot] = {
-    val context    = MetricsReporter.newContext(UUID.randomUUID(), PersistenceId(metadata.persistenceId))
-    val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreDeserializeSnapshot(context))
-
-    val resultFuture = for {
-      serializer <- serializerAsync
-      deserialized <- serializer match {
-        case asyncSerializer: AsyncSerializer =>
-          asyncSerializer.toBinaryAsync(bytes)
-        case _ =>
-          try Future.successful(serializer.fromBinary(bytes))
-          catch {
-            case ex: Throwable =>
-              Future.failed(ex)
-          }
-      }
-    } yield deserialized.asInstanceOf[Snapshot]
-
-    resultFuture.onComplete {
-      case Success(_) =>
-        metricsReporter.foreach(_.afterSnapshotStoreDeserializeSnapshot(newContext))
-      case Failure(ex) =>
-        metricsReporter.foreach(_.errorSnapshotStoreDeserializeSnapshot(newContext, ex))
-    }
-
-    resultFuture
-  }
-
-  private def serializeAsync(metadata: SnapshotMetadata, snapshot: Snapshot)(implicit
-      ec: ExecutionContext
-  ): Future[Array[Byte]] = {
-    val pid        = PersistenceId(metadata.persistenceId)
-    val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
-    val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreSerializeSnapshot(context))
-
-    val serializedFuture = for {
-      serializer <- serializerAsync
-      serialized <- serializer match {
-        case asyncSerializer: AsyncSerializer =>
-          asyncSerializer.toBinaryAsync(snapshot)
-        case _ =>
-          try Future.successful(serializer.toBinary(snapshot))
-          catch {
-            case ex: Throwable =>
-              Future.failed(ex)
-          }
-      }
-    } yield serialized
-
-    serializedFuture.onComplete {
-      case Success(_) =>
-        metricsReporter.foreach(_.afterSnapshotStoreSerializeSnapshot(newContext))
-      case Failure(ex) =>
-        metricsReporter.foreach(_.errorSnapshotStoreSerializeSnapshot(newContext, ex))
-    }
-    serializedFuture
-  }
+  private val serializer = new ByteArraySnapshotSerializer(serialization, metricsReporter)
 
   override def loadAsync(
       persistenceId: String,
@@ -187,7 +121,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     val newContext                    = metricsReporter.fold(context)(_.beforeSnapshotStoreSaveAsync(context))
 
     val future = for {
-      serialized <- serializeAsync(snapshotMetadata, Snapshot(snapshot))
+      serialized <- serializer.serialize(snapshotMetadata, snapshot)
       putObjectRequest = PutObjectRequest
         .builder()
         .contentLength(serialized.length.toLong)
@@ -195,7 +129,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
         .key(convertToKey(snapshotMetadata))
         .build()
       result <- s3AsyncClient
-        .putObject(putObjectRequest, AsyncRequestBody.fromBytes(serialized))
+        .putObject(putObjectRequest, AsyncRequestBody.fromBytes(serialized.snapshot))
         .toScala
         .flatMap { response =>
           val sdkHttpResponse = response.sdkHttpResponse
@@ -209,12 +143,14 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
             )
         }
     } yield result
+
     future.onComplete {
       case Success(_) =>
         metricsReporter.foreach(_.afterSnapshotStoreSaveAsync(newContext))
       case Failure(ex) =>
         metricsReporter.foreach(_.errorSnapshotStoreSaveAsync(newContext, ex))
     }
+
     future
   }
 
@@ -298,9 +234,17 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
           .toScala
           .flatMap { responseBytes =>
             if (responseBytes.response().sdkHttpResponse().isSuccessful) {
-              deserialize(snapshotMetadata, responseBytes.asByteArray()).map { snapshot =>
-                Some(SelectedSnapshot(snapshotMetadata, snapshot.data))
-              }
+              serializer
+                .deserialize(
+                  SnapshotRow(
+                    PersistenceId(snapshotMetadata.persistenceId),
+                    SequenceNumber(snapshotMetadata.sequenceNr),
+                    snapshotMetadata.timestamp,
+                    responseBytes.asByteArray()
+                  )
+                ).map { case (snapshotMetadata, snapshotData) =>
+                  Some(SelectedSnapshot(snapshotMetadata, snapshotData))
+                }
             } else Future.successful(None)
           }.recoverWith { case NonFatal(e) =>
             log.error(e, s"Error loading snapshot [${snapshotMetadata}]")
