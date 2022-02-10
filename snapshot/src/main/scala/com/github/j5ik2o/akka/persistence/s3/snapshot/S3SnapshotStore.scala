@@ -35,13 +35,13 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
   private val maxLoadAttempts: Int                = pluginConfig.maxLoadAttempts
   private val s3ClientConfig: S3ClientConfig      = pluginConfig.clientConfig
 
-  private val httpClientBuilder = HttpClientBuilderUtils.setup(s3ClientConfig)
-  private val javaS3ClientBuilder =
-    S3ClientBuilderUtils.setup(s3ClientConfig, httpClientBuilder.build())
-  private val s3AsyncClient = javaS3ClientBuilder.build()
-
   private val extendedSystem: ExtendedActorSystem = system.asInstanceOf[ExtendedActorSystem]
   private val dynamicAccess: DynamicAccess        = extendedSystem.dynamicAccess
+
+  private val httpClientBuilder = HttpClientBuilderUtils.setup(s3ClientConfig)
+  private val javaS3ClientBuilder =
+    S3ClientBuilderUtils.setup(dynamicAccess, pluginConfig, httpClientBuilder.build())
+  private val s3AsyncClient = javaS3ClientBuilder.build()
 
   protected val metricsReporter: Option[MetricsReporter] = {
     val metricsReporterProvider = MetricsReporterProvider.create(dynamicAccess, pluginConfig)
