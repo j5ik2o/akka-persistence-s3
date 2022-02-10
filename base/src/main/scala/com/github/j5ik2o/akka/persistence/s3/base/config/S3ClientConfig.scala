@@ -1,5 +1,6 @@
 package com.github.j5ik2o.akka.persistence.s3.base.config
 
+import com.github.j5ik2o.akka.persistence.s3.base.provider.AwsCredentialsProviderProvider
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._
 
@@ -13,6 +14,11 @@ object S3ClientConfig {
       secretAccessKey = rootConfig.getAs[String]("secret-access-key"),
       endpoint = rootConfig.getAs[String]("endpoint"),
       region = rootConfig.getAs[String]("region"),
+      awsCredentialsProviderProviderClassName = rootConfig.getOrElse[String](
+        "aws-credentials-provider-provider-class-name",
+        classOf[AwsCredentialsProviderProvider.Default].getName
+      ),
+      awsCredentialsProviderClassName = rootConfig.getAs[String]("aws-credentials-provider-class-name"),
       maxConcurrency = rootConfig.getAs[Int]("max-concurrency"),
       maxPendingConnectionAcquires = rootConfig.getAs[Int]("max-pending-connection-acquires"),
       readTimeout = rootConfig.getAs[FiniteDuration]("read-timeout"),
@@ -50,7 +56,7 @@ object S3ClientOptionsConfig {
 
 }
 
-case class S3ClientOptionsConfig(
+final case class S3ClientOptionsConfig(
     dualstackEnabled: Option[Boolean],
     accelerateModeEnabled: Option[Boolean],
     pathStyleAccessEnabled: Option[Boolean],
@@ -59,11 +65,13 @@ case class S3ClientOptionsConfig(
     useArnRegionEnabled: Option[Boolean]
 )
 
-case class S3ClientConfig(
+final case class S3ClientConfig(
     accessKeyId: Option[String],
     secretAccessKey: Option[String],
     endpoint: Option[String],
     region: Option[String],
+    awsCredentialsProviderProviderClassName: String,
+    awsCredentialsProviderClassName: Option[String],
     maxConcurrency: Option[Int],
     maxPendingConnectionAcquires: Option[Int],
     readTimeout: Option[FiniteDuration],

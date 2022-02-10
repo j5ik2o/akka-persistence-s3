@@ -38,6 +38,7 @@ object JournalPluginConfig {
     )
   }
 }
+
 final case class JournalPluginConfig(
     bucketName: Option[String],
     bucketNameResolverClassName: String,
@@ -50,4 +51,4 @@ final case class JournalPluginConfig(
     metricsReporterProviderClassName: String,
     metricsReporterClassName: Option[String],
     clientConfig: S3ClientConfig
-) extends PluginConfig {}
+) extends PluginConfig

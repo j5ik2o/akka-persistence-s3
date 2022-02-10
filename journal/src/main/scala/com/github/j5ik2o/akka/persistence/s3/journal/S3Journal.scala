@@ -49,12 +49,13 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
   private val listObjectsBatchSize: Int           = pluginConfig.listObjectsBatchSize
   private val s3ClientConfig: S3ClientConfig      = pluginConfig.clientConfig
   private val httpClientBuilder                   = HttpClientBuilderUtils.setup(s3ClientConfig)
-  private val javaS3ClientBuilder =
-    S3ClientBuilderUtils.setup(s3ClientConfig, httpClientBuilder.build())
-  private val s3AsyncClient = javaS3ClientBuilder.build()
 
   private val extendedSystem: ExtendedActorSystem = system.asInstanceOf[ExtendedActorSystem]
   private val dynamicAccess: DynamicAccess        = extendedSystem.dynamicAccess
+
+  private val javaS3ClientBuilder =
+    S3ClientBuilderUtils.setup(dynamicAccess, pluginConfig, httpClientBuilder.build())
+  private val s3AsyncClient = javaS3ClientBuilder.build()
 
   protected val metricsReporter: Option[MetricsReporter] = {
     val metricsReporterProvider = MetricsReporterProvider.create(dynamicAccess, pluginConfig)
@@ -239,7 +240,7 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
       }
     }
 
-    def execute(implicit ec: ExecutionContext) = listObjectsSource(pid, listObjectsBatchSize)
+    def execute(implicit ec: ExecutionContext): Future[Unit] = listObjectsSource(pid, listObjectsBatchSize)
       .log("list-objects")
       .mapConcat { res =>
         if (res.hasContents)
