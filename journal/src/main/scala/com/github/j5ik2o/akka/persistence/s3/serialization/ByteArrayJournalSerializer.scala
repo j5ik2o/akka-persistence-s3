@@ -20,6 +20,7 @@ import akka.persistence.PersistentRepr
 import akka.serialization.{ AsyncSerializer, Serialization, Serializer }
 import com.github.j5ik2o.akka.persistence.s3.base.metrics.MetricsReporter
 import com.github.j5ik2o.akka.persistence.s3.base.model.{ PersistenceId, SequenceNumber }
+import com.github.j5ik2o.akka.persistence.s3.base.trace.TraceReporter
 import com.github.j5ik2o.akka.persistence.s3.journal.JournalRow
 
 import java.util.UUID
@@ -29,7 +30,8 @@ import scala.util.{ Failure, Success }
 class ByteArrayJournalSerializer(
     serialization: Serialization,
     separator: String,
-    metricsReporter: Option[MetricsReporter]
+    metricsReporter: Option[MetricsReporter],
+    traceReporter: Option[TraceReporter]
 ) extends FlowPersistentReprSerializer[JournalRow] {
 
   private def serializerAsync: Future[Serializer] = {
@@ -78,7 +80,7 @@ class ByteArrayJournalSerializer(
     val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
     val newContext = metricsReporter.fold(context)(_.beforeJournalSerializeJournal(context))
 
-    val future = for {
+    def future = for {
       serializer <- serializerAsync
       serialized <- toBinaryAsync(serializer, persistentRepr)
     } yield JournalRow(
@@ -90,14 +92,16 @@ class ByteArrayJournalSerializer(
       encodeTags(tags, separator)
     )
 
-    future.onComplete {
+    val traced = traceReporter.fold(future)(_.traceJournalSerializeJournal(context)(future))
+
+    traced.onComplete {
       case Success(_) =>
         metricsReporter.foreach(_.afterJournalSerializeJournal(newContext))
       case Failure(ex) =>
         metricsReporter.foreach(_.errorJournalSerializeJournal(newContext, ex))
     }
 
-    future
+    traced
   }
 
   override def deserialize(
@@ -107,18 +111,20 @@ class ByteArrayJournalSerializer(
     val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
     val newContext = metricsReporter.fold(context)(_.beforeJournalDeserializeJournal(context))
 
-    val future = for {
+    def future = for {
       serializer   <- serializerAsync
       deserialized <- fromBinaryAsync(serializer, journalRow.message)
     } yield (deserialized, decodeTags(journalRow.tags, separator), journalRow.ordering)
 
-    future.onComplete {
+    val traced = traceReporter.fold(future)(_.traceJournalDeserializeJournal(context)(future))
+
+    traced.onComplete {
       case Success(_) =>
         metricsReporter.foreach(_.afterJournalDeserializeJournal(newContext))
       case Failure(ex) =>
         metricsReporter.foreach(_.errorJournalDeserializeJournal(newContext, ex))
     }
 
-    future
+    traced
   }
 }

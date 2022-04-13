@@ -4,18 +4,11 @@ import java.util.UUID
 import akka.actor.DynamicAccess
 import com.github.j5ik2o.akka.persistence.s3.base.config.PluginConfig
 import com.github.j5ik2o.akka.persistence.s3.base.exception.PluginException
-import com.github.j5ik2o.akka.persistence.s3.base.model.PersistenceId
+import com.github.j5ik2o.akka.persistence.s3.base.model.{ Context, PersistenceId }
 
 import scala.annotation.unused
 import scala.collection.immutable._
 import scala.util.{ Failure, Success }
-
-trait Context {
-  def id: UUID
-  def persistenceId: PersistenceId
-  def data: Option[Any]
-  def withData(value: Option[Any]): Context
-}
 
 trait MetricsReporter {
 

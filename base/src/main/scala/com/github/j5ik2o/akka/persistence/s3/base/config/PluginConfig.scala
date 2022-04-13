@@ -5,5 +5,7 @@ trait PluginConfig {
   def bucketNameResolverClassName: String
   def metricsReporterProviderClassName: String
   def metricsReporterClassName: Option[String]
+  def traceReporterProviderClassName: String
+  def traceReporterClassName: Option[String]
   def clientConfig: S3ClientConfig
 }
