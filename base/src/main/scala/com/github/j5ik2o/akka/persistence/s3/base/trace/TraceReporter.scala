@@ -7,7 +7,7 @@ import com.github.j5ik2o.akka.persistence.s3.base.metrics.Context
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
-import scala.util.{ Failure, Success }
+import scala.util.{Failure, Success}
 
 trait TraceReporter {
 
@@ -22,6 +22,18 @@ trait TraceReporter {
   def traceJournalSerializeJournal[T](context: Context)(f: => Future[T]): Future[T]
 
   def traceJournalDeserializeJournal[T](context: Context)(f: => Future[T]): Future[T]
+
+  def traceSnapshotStoreLoadAsync[T](context: Context)(f: => Future[T]): Future[T] = f
+
+  def traceSnapshotStoreSaveAsync[T](context: Context)(f: => Future[T]): Future[T] = f
+
+  def traceSnapshotStoreDeleteAsync[T](context: Context)(f: => Future[T]): Future[T] = f
+
+  def traceSnapshotStoreDeleteWithCriteriaAsync[T](context: Context)(f: => Future[T]): Future[T] = f
+
+  def traceSnapshotStoreSerializeSnapshot[T](context: Context)(f: => Future[T]): Future[T] = f
+
+  def traceSnapshotStoreDeserializeSnapshot[T](context: Context)(f: => Future[T]): Future[T] = f
 
 }
 
