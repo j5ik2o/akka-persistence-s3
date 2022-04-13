@@ -5,14 +5,18 @@ import akka.persistence.serialization.Snapshot
 import akka.serialization.{ AsyncSerializer, Serialization, Serializer }
 import com.github.j5ik2o.akka.persistence.s3.base.metrics.MetricsReporter
 import com.github.j5ik2o.akka.persistence.s3.base.model.{ PersistenceId, SequenceNumber }
+import com.github.j5ik2o.akka.persistence.s3.base.trace.TraceReporter
 import com.github.j5ik2o.akka.persistence.s3.snapshot.SnapshotRow
 
 import java.util.UUID
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success }
 
-class ByteArraySnapshotSerializer(serialization: Serialization, metricsReporter: Option[MetricsReporter])
-    extends SnapshotSerializer[SnapshotRow] {
+class ByteArraySnapshotSerializer(
+    serialization: Serialization,
+    metricsReporter: Option[MetricsReporter],
+    traceReporter: Option[TraceReporter]
+) extends SnapshotSerializer[SnapshotRow] {
 
   private def serializerAsync: Future[Serializer] = {
     try Future.successful(serialization.serializerFor(classOf[Snapshot]))
@@ -57,7 +61,7 @@ class ByteArraySnapshotSerializer(serialization: Serialization, metricsReporter:
     val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
     val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreSerializeSnapshot(context))
 
-    val future = for {
+    def future = for {
       serializer <- serializerAsync
       serialized <- toBinaryAsync(serializer, Snapshot(snapshot))
     } yield SnapshotRow(
@@ -67,21 +71,23 @@ class ByteArraySnapshotSerializer(serialization: Serialization, metricsReporter:
       serialized
     )
 
-    future.onComplete {
+    val traced = traceReporter.fold(future)(_.traceSnapshotStoreSerializeSnapshot(context)(future))
+
+    traced.onComplete {
       case Success(_) =>
         metricsReporter.foreach(_.afterSnapshotStoreSerializeSnapshot(newContext))
       case Failure(ex) =>
         metricsReporter.foreach(_.errorSnapshotStoreSerializeSnapshot(newContext, ex))
     }
 
-    future
+    traced
   }
 
   override def deserialize(snapshotRow: SnapshotRow)(implicit ec: ExecutionContext): Future[(SnapshotMetadata, Any)] = {
     val context    = MetricsReporter.newContext(UUID.randomUUID(), snapshotRow.persistenceId)
     val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreDeserializeSnapshot(context))
 
-    val future = for {
+    def future = for {
       serializer   <- serializerAsync
       deserialized <- fromBinaryAsync(serializer, snapshotRow.snapshot)
     } yield {
@@ -90,13 +96,15 @@ class ByteArraySnapshotSerializer(serialization: Serialization, metricsReporter:
       (snapshotMetadata, deserialized.data)
     }
 
-    future.onComplete {
+    val traced = traceReporter.fold(future)(_.traceSnapshotStoreDeserializeSnapshot(context)(future))
+
+    traced.onComplete {
       case Success(_) =>
         metricsReporter.foreach(_.afterSnapshotStoreDeserializeSnapshot(newContext))
       case Failure(ex) =>
         metricsReporter.foreach(_.errorSnapshotStoreDeserializeSnapshot(newContext, ex))
     }
 
-    future
+    traced
   }
 }
