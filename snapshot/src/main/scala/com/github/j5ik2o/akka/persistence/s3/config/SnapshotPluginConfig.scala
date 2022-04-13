@@ -1,8 +1,8 @@
 package com.github.j5ik2o.akka.persistence.s3.config
 
-import com.github.j5ik2o.akka.persistence.s3.base.config.{PluginConfig, S3ClientConfig}
-import com.github.j5ik2o.akka.persistence.s3.base.metrics.{MetricsReporter, MetricsReporterProvider}
-import com.github.j5ik2o.akka.persistence.s3.base.trace.{TraceReporter, TraceReporterProvider}
+import com.github.j5ik2o.akka.persistence.s3.base.config.{ PluginConfig, S3ClientConfig }
+import com.github.j5ik2o.akka.persistence.s3.base.metrics.{ MetricsReporter, MetricsReporterProvider }
+import com.github.j5ik2o.akka.persistence.s3.base.trace.{ TraceReporter, TraceReporterProvider }
 import com.github.j5ik2o.akka.persistence.s3.base.utils.ClassCheckUtils
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._

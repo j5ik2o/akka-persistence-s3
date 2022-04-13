@@ -3,11 +3,11 @@ package com.github.j5ik2o.akka.persistence.s3.base.trace
 import akka.actor.DynamicAccess
 import com.github.j5ik2o.akka.persistence.s3.base.config.PluginConfig
 import com.github.j5ik2o.akka.persistence.s3.base.exception.PluginException
-import com.github.j5ik2o.akka.persistence.s3.base.metrics.Context
+import com.github.j5ik2o.akka.persistence.s3.base.model.Context
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util.{ Failure, Success }
 
 trait TraceReporter {
 
