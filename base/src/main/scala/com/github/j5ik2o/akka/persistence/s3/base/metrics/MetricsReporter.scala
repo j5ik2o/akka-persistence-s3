@@ -27,10 +27,6 @@ trait MetricsReporter {
   def afterJournalAsyncReadHighestSequenceNr(@unused context: Context): Unit = {}
   def errorJournalAsyncReadHighestSequenceNr(@unused context: Context, @unused ex: Throwable): Unit = {}
 
-  def beforeJournalAsyncUpdateEvent(context: Context): Context = { context }
-  def afterJournalAsyncUpdateEvent(@unused context: Context): Unit = {}
-  def errorJournalAsyncUpdateEvent(@unused context: Context, @unused ex: Throwable): Unit = {}
-
   def beforeJournalSerializeJournal(context: Context): Context = { context }
   def afterJournalSerializeJournal(@unused context: Context): Unit = {}
   def errorJournalSerializeJournal(@unused context: Context, @unused ex: Throwable): Unit = {}
