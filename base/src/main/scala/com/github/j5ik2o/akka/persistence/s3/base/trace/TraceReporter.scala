@@ -10,7 +10,7 @@ import scala.collection.immutable.Seq
 import scala.concurrent.Future
 import scala.util.{ Failure, Success }
 
-trait TraceReporter {
+abstract class TraceReporter(val pluginConfig: PluginConfig) {
 
   def traceJournalAsyncWriteMessages[T](@unused context: Context)(f: => Future[T]): Future[T] = f
 

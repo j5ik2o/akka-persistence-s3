@@ -9,7 +9,7 @@ import scala.annotation.unused
 import scala.collection.immutable._
 import scala.util.{ Failure, Success }
 
-trait MetricsReporter {
+abstract class MetricsReporter(val pluginConfig: PluginConfig) {
 
   def beforeJournalAsyncWriteMessages(context: Context): Context = { context }
   def afterJournalAsyncWriteMessages(@unused context: Context): Unit = {}
