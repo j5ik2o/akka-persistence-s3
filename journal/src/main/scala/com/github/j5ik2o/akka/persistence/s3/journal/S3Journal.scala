@@ -1,31 +1,35 @@
 package com.github.j5ik2o.akka.persistence.s3.journal
 
-import akka.actor.{ActorSystem, DynamicAccess, ExtendedActorSystem}
+import akka.actor.{ ActorSystem, DynamicAccess, ExtendedActorSystem }
 import akka.persistence.journal.AsyncWriteJournal
-import akka.persistence.{AtomicWrite, PersistentRepr}
-import akka.serialization.{Serialization, SerializationExtension}
+import akka.persistence.{ AtomicWrite, PersistentRepr }
+import akka.serialization.{ Serialization, SerializationExtension }
 import akka.stream.Attributes
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{ Sink, Source }
 import com.github.j5ik2o.akka.persistence.s3.base.config.S3ClientConfig
-import com.github.j5ik2o.akka.persistence.s3.base.metrics.{MetricsReporter, MetricsReporterProvider}
-import com.github.j5ik2o.akka.persistence.s3.base.model.{Context, PersistenceId, SequenceNumber}
-import com.github.j5ik2o.akka.persistence.s3.base.resolver.{Key, PathPrefixResolver}
-import com.github.j5ik2o.akka.persistence.s3.base.trace.{TraceReporter, TraceReporterProvider}
-import com.github.j5ik2o.akka.persistence.s3.base.utils.{HttpClientBuilderUtils, S3ClientBuilderUtils}
+import com.github.j5ik2o.akka.persistence.s3.base.metrics.{ MetricsReporter, MetricsReporterProvider }
+import com.github.j5ik2o.akka.persistence.s3.base.model.{ Context, PersistenceId, SequenceNumber }
+import com.github.j5ik2o.akka.persistence.s3.base.resolver.{ Key, PathPrefixResolver }
+import com.github.j5ik2o.akka.persistence.s3.base.trace.{ TraceReporter, TraceReporterProvider }
+import com.github.j5ik2o.akka.persistence.s3.base.utils.{ HttpClientBuilderUtils, S3ClientBuilderUtils }
 import com.github.j5ik2o.akka.persistence.s3.config.JournalPluginConfig
-import com.github.j5ik2o.akka.persistence.s3.resolver.{JournalBucketNameResolver, JournalMetadataKey, JournalMetadataKeyConverter}
-import com.github.j5ik2o.akka.persistence.s3.serialization.{ByteArrayJournalSerializer, FlowPersistentReprSerializer}
+import com.github.j5ik2o.akka.persistence.s3.resolver.{
+  JournalBucketNameResolver,
+  JournalMetadataKey,
+  JournalMetadataKeyConverter
+}
+import com.github.j5ik2o.akka.persistence.s3.serialization.{ ByteArrayJournalSerializer, FlowPersistentReprSerializer }
 import com.typesafe.config.Config
-import software.amazon.awssdk.core.async.{AsyncRequestBody, AsyncResponseTransformer}
+import software.amazon.awssdk.core.async.{ AsyncRequestBody, AsyncResponseTransformer }
 import software.amazon.awssdk.services.s3.model._
 
 import java.util.UUID
 import scala.collection.immutable
 import scala.collection.immutable.Seq
 import scala.compat.java8.FutureConverters._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.jdk.CollectionConverters._
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 class S3Journal(config: Config) extends AsyncWriteJournal {
   implicit val system: ActorSystem = context.system

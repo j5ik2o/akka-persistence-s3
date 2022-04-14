@@ -7,7 +7,7 @@ import com.github.j5ik2o.akka.persistence.s3.base.model.Context
 
 import scala.annotation.unused
 import scala.collection.immutable._
-import scala.util.{Failure, Success}
+import scala.util.{ Failure, Success }
 
 trait MetricsReporter {
 

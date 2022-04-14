@@ -2,15 +2,15 @@ package com.github.j5ik2o.akka.persistence.s3.serialization
 
 import akka.persistence.SnapshotMetadata
 import akka.persistence.serialization.Snapshot
-import akka.serialization.{AsyncSerializer, Serialization, Serializer}
+import akka.serialization.{ AsyncSerializer, Serialization, Serializer }
 import com.github.j5ik2o.akka.persistence.s3.base.metrics.MetricsReporter
-import com.github.j5ik2o.akka.persistence.s3.base.model.{Context, PersistenceId, SequenceNumber}
+import com.github.j5ik2o.akka.persistence.s3.base.model.{ Context, PersistenceId, SequenceNumber }
 import com.github.j5ik2o.akka.persistence.s3.base.trace.TraceReporter
 import com.github.j5ik2o.akka.persistence.s3.snapshot.SnapshotRow
 
 import java.util.UUID
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.{ Failure, Success }
 
 class ByteArraySnapshotSerializer(
     serialization: Serialization,

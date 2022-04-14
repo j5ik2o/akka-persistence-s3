@@ -1,29 +1,29 @@
 package com.github.j5ik2o.akka.persistence.s3.snapshot
 
-import akka.actor.{ActorSystem, DynamicAccess, ExtendedActorSystem}
+import akka.actor.{ ActorSystem, DynamicAccess, ExtendedActorSystem }
 import akka.persistence.snapshot.SnapshotStore
-import akka.persistence.{SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria}
-import akka.serialization.{Serialization, SerializationExtension}
+import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
+import akka.serialization.{ Serialization, SerializationExtension }
 import com.github.j5ik2o.akka.persistence.s3.base.config.S3ClientConfig
-import com.github.j5ik2o.akka.persistence.s3.base.metrics.{MetricsReporter, MetricsReporterProvider}
-import com.github.j5ik2o.akka.persistence.s3.base.model.{Context, PersistenceId, SequenceNumber}
+import com.github.j5ik2o.akka.persistence.s3.base.metrics.{ MetricsReporter, MetricsReporterProvider }
+import com.github.j5ik2o.akka.persistence.s3.base.model.{ Context, PersistenceId, SequenceNumber }
 import com.github.j5ik2o.akka.persistence.s3.base.resolver.PathPrefixResolver
-import com.github.j5ik2o.akka.persistence.s3.base.trace.{TraceReporter, TraceReporterProvider}
-import com.github.j5ik2o.akka.persistence.s3.base.utils.{HttpClientBuilderUtils, S3ClientBuilderUtils}
+import com.github.j5ik2o.akka.persistence.s3.base.trace.{ TraceReporter, TraceReporterProvider }
+import com.github.j5ik2o.akka.persistence.s3.base.utils.{ HttpClientBuilderUtils, S3ClientBuilderUtils }
 import com.github.j5ik2o.akka.persistence.s3.config.SnapshotPluginConfig
-import com.github.j5ik2o.akka.persistence.s3.resolver.{SnapshotBucketNameResolver, SnapshotMetadataKeyConverter}
+import com.github.j5ik2o.akka.persistence.s3.resolver.{ SnapshotBucketNameResolver, SnapshotMetadataKeyConverter }
 import com.github.j5ik2o.akka.persistence.s3.serialization.ByteArraySnapshotSerializer
 import com.typesafe.config.Config
-import software.amazon.awssdk.core.async.{AsyncRequestBody, AsyncResponseTransformer}
+import software.amazon.awssdk.core.async.{ AsyncRequestBody, AsyncResponseTransformer }
 import software.amazon.awssdk.services.s3.model._
 
 import java.util.UUID
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.jdk.CollectionConverters._
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success}
+import scala.util.{ Failure, Success }
 
 class S3SnapshotStore(config: Config) extends SnapshotStore {
   implicit val system: ActorSystem = context.system
