@@ -8,7 +8,7 @@ import akka.stream.Attributes
 import akka.stream.scaladsl.{ Sink, Source }
 import com.github.j5ik2o.akka.persistence.s3.base.config.S3ClientConfig
 import com.github.j5ik2o.akka.persistence.s3.base.metrics.{ MetricsReporter, MetricsReporterProvider }
-import com.github.j5ik2o.akka.persistence.s3.base.model.{ PersistenceId, SequenceNumber }
+import com.github.j5ik2o.akka.persistence.s3.base.model.{ Context, PersistenceId, SequenceNumber }
 import com.github.j5ik2o.akka.persistence.s3.base.resolver.{ Key, PathPrefixResolver }
 import com.github.j5ik2o.akka.persistence.s3.base.trace.{ TraceReporter, TraceReporterProvider }
 import com.github.j5ik2o.akka.persistence.s3.base.utils.{ HttpClientBuilderUtils, S3ClientBuilderUtils }
@@ -124,7 +124,7 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
   override def asyncWriteMessages(atomicWrites: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
     val persistenceId = atomicWrites.head.persistenceId
     val pid           = PersistenceId(persistenceId)
-    val context       = MetricsReporter.newContext(UUID.randomUUID(), pid)
+    val context       = Context.newContext(UUID.randomUUID(), pid)
     val newContext    = metricsReporter.fold(context)(_.beforeJournalAsyncWriteMessages(context))
 
     implicit val ec: ExecutionContext = system.dispatcher
@@ -207,7 +207,7 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
     implicit val ec: ExecutionContext = system.dispatcher
 
     val pid        = PersistenceId(persistenceId)
-    val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
+    val context    = Context.newContext(UUID.randomUUID(), pid)
     val newContext = metricsReporter.fold(context)(_.beforeJournalAsyncDeleteMessagesTo(context))
 
     def deleteObject(pid: PersistenceId, obj: S3Object)(implicit ec: ExecutionContext): Future[DeleteObjectResponse] = {
@@ -289,7 +289,7 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
     implicit val ec: ExecutionContext = system.dispatcher
 
     val pid        = PersistenceId(persistenceId)
-    val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
+    val context    = Context.newContext(UUID.randomUUID(), pid)
     val newContext = metricsReporter.fold(context)(_.beforeJournalAsyncReplayMessages(context))
 
     def getObject(pid: PersistenceId, key: Key)(implicit ec: ExecutionContext): Future[Array[Byte]] = {
@@ -369,7 +369,7 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
     implicit val ec: ExecutionContext = system.dispatcher
 
     val pid        = PersistenceId(persistenceId)
-    val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
+    val context    = Context.newContext(UUID.randomUUID(), pid)
     val newContext = metricsReporter.fold(context)(_.beforeJournalAsyncReadHighestSequenceNr(context))
 
     val fromSeqNr = Math.max(1, fromSequenceNr)

@@ -19,7 +19,7 @@ package com.github.j5ik2o.akka.persistence.s3.serialization
 import akka.persistence.PersistentRepr
 import akka.serialization.{ AsyncSerializer, Serialization, Serializer }
 import com.github.j5ik2o.akka.persistence.s3.base.metrics.MetricsReporter
-import com.github.j5ik2o.akka.persistence.s3.base.model.{ PersistenceId, SequenceNumber }
+import com.github.j5ik2o.akka.persistence.s3.base.model.{ Context, PersistenceId, SequenceNumber }
 import com.github.j5ik2o.akka.persistence.s3.base.trace.TraceReporter
 import com.github.j5ik2o.akka.persistence.s3.journal.JournalRow
 
@@ -77,7 +77,7 @@ class ByteArrayJournalSerializer(
       index: Option[Int]
   )(implicit ec: ExecutionContext): Future[JournalRow] = {
     val pid        = PersistenceId(persistentRepr.persistenceId)
-    val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
+    val context    = Context.newContext(UUID.randomUUID(), pid)
     val newContext = metricsReporter.fold(context)(_.beforeJournalSerializeJournal(context))
 
     def future = for {
@@ -108,7 +108,7 @@ class ByteArrayJournalSerializer(
       journalRow: JournalRow
   )(implicit ec: ExecutionContext): Future[(PersistentRepr, Set[String], Long)] = {
     val pid        = journalRow.persistenceId
-    val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
+    val context    = Context.newContext(UUID.randomUUID(), pid)
     val newContext = metricsReporter.fold(context)(_.beforeJournalDeserializeJournal(context))
 
     def future = for {

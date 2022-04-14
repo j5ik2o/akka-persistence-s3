@@ -6,7 +6,7 @@ import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionC
 import akka.serialization.{ Serialization, SerializationExtension }
 import com.github.j5ik2o.akka.persistence.s3.base.config.S3ClientConfig
 import com.github.j5ik2o.akka.persistence.s3.base.metrics.{ MetricsReporter, MetricsReporterProvider }
-import com.github.j5ik2o.akka.persistence.s3.base.model.{ PersistenceId, SequenceNumber }
+import com.github.j5ik2o.akka.persistence.s3.base.model.{ Context, PersistenceId, SequenceNumber }
 import com.github.j5ik2o.akka.persistence.s3.base.resolver.PathPrefixResolver
 import com.github.j5ik2o.akka.persistence.s3.base.trace.{ TraceReporter, TraceReporterProvider }
 import com.github.j5ik2o.akka.persistence.s3.base.utils.{ HttpClientBuilderUtils, S3ClientBuilderUtils }
@@ -106,7 +106,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     implicit val ec: ExecutionContext = system.dispatcher
 
     val pid        = PersistenceId(persistenceId)
-    val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
+    val context    = Context.newContext(UUID.randomUUID(), pid)
     val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreLoadAsync(context))
     def future = snapshotMetadatas(persistenceId, criteria)
       .map(_.sorted.takeRight(maxLoadAttempts))
@@ -126,7 +126,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
   override def saveAsync(snapshotMetadata: SnapshotMetadata, snapshot: Any): Future[Unit] = {
     implicit val ec: ExecutionContext = system.dispatcher
     val pid                           = PersistenceId(snapshotMetadata.persistenceId)
-    val context                       = MetricsReporter.newContext(UUID.randomUUID(), pid)
+    val context                       = Context.newContext(UUID.randomUUID(), pid)
     val newContext                    = metricsReporter.fold(context)(_.beforeSnapshotStoreSaveAsync(context))
 
     def future = for {
@@ -180,7 +180,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       )
     else {
       val pid        = PersistenceId(snapshotMetadata.persistenceId)
-      val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
+      val context    = Context.newContext(UUID.randomUUID(), pid)
       val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreDeleteAsync(context))
       val request = DeleteObjectRequest
         .builder()
@@ -219,7 +219,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     implicit val ec: ExecutionContext = system.dispatcher
 
     val pid        = PersistenceId(persistenceId)
-    val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
+    val context    = Context.newContext(UUID.randomUUID(), pid)
     val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreDeleteWithCriteriaAsync(context))
     val metadatas  = snapshotMetadatas(persistenceId, criteria)
     def future     = metadatas.flatMap(list => Future.sequence(list.map(deleteAsync))).map(_ => ())

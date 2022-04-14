@@ -5,35 +5,36 @@ import com.github.j5ik2o.akka.persistence.s3.base.config.PluginConfig
 import com.github.j5ik2o.akka.persistence.s3.base.exception.PluginException
 import com.github.j5ik2o.akka.persistence.s3.base.model.Context
 
+import scala.annotation.unused
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 import scala.util.{ Failure, Success }
 
-trait TraceReporter {
+abstract class TraceReporter(val pluginConfig: PluginConfig) {
 
-  def traceJournalAsyncWriteMessages[T](context: Context)(f: => Future[T]): Future[T]
+  def traceJournalAsyncWriteMessages[T](@unused context: Context)(f: => Future[T]): Future[T] = f
 
-  def traceJournalAsyncDeleteMessagesTo[T](context: Context)(f: => Future[T]): Future[T]
+  def traceJournalAsyncDeleteMessagesTo[T](@unused context: Context)(f: => Future[T]): Future[T] = f
 
-  def traceJournalAsyncReplayMessages[T](context: Context)(f: => Future[T]): Future[T]
+  def traceJournalAsyncReplayMessages[T](@unused context: Context)(f: => Future[T]): Future[T] = f
 
-  def traceJournalAsyncReadHighestSequenceNr[T](context: Context)(f: => Future[T]): Future[T]
+  def traceJournalAsyncReadHighestSequenceNr[T](@unused context: Context)(f: => Future[T]): Future[T] = f
 
-  def traceJournalSerializeJournal[T](context: Context)(f: => Future[T]): Future[T]
+  def traceJournalSerializeJournal[T](@unused context: Context)(f: => Future[T]): Future[T] = f
 
-  def traceJournalDeserializeJournal[T](context: Context)(f: => Future[T]): Future[T]
+  def traceJournalDeserializeJournal[T](@unused context: Context)(f: => Future[T]): Future[T] = f
 
-  def traceSnapshotStoreLoadAsync[T](context: Context)(f: => Future[T]): Future[T] = f
+  def traceSnapshotStoreLoadAsync[T](@unused context: Context)(f: => Future[T]): Future[T] = f
 
-  def traceSnapshotStoreSaveAsync[T](context: Context)(f: => Future[T]): Future[T] = f
+  def traceSnapshotStoreSaveAsync[T](@unused context: Context)(f: => Future[T]): Future[T] = f
 
-  def traceSnapshotStoreDeleteAsync[T](context: Context)(f: => Future[T]): Future[T] = f
+  def traceSnapshotStoreDeleteAsync[T](@unused context: Context)(f: => Future[T]): Future[T] = f
 
-  def traceSnapshotStoreDeleteWithCriteriaAsync[T](context: Context)(f: => Future[T]): Future[T] = f
+  def traceSnapshotStoreDeleteWithCriteriaAsync[T](@unused context: Context)(f: => Future[T]): Future[T] = f
 
-  def traceSnapshotStoreSerializeSnapshot[T](context: Context)(f: => Future[T]): Future[T] = f
+  def traceSnapshotStoreSerializeSnapshot[T](@unused context: Context)(f: => Future[T]): Future[T] = f
 
-  def traceSnapshotStoreDeserializeSnapshot[T](context: Context)(f: => Future[T]): Future[T] = f
+  def traceSnapshotStoreDeserializeSnapshot[T](@unused context: Context)(f: => Future[T]): Future[T] = f
 
 }
 

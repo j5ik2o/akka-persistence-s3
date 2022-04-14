@@ -15,7 +15,6 @@ object JournalPluginConfig {
   val traceReporterClassNameKey                       = "trace-reporter-class-name"
   val traceReporterProviderClassNameKey               = "trace-reporter-provider-class-name"
   val DefaultTagSeparator: String                     = ","
-  val DefaultMetricsReporterClassName: String         = classOf[MetricsReporter.None].getName
   val DefaultMetricsReporterProviderClassName: String = classOf[MetricsReporterProvider.Default].getName
   val DefaultTraceReporterProviderClassName: String   = classOf[TraceReporterProvider.Default].getName
 
