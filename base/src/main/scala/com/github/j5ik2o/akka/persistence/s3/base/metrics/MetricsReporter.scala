@@ -1,14 +1,13 @@
 package com.github.j5ik2o.akka.persistence.s3.base.metrics
 
-import java.util.UUID
 import akka.actor.DynamicAccess
 import com.github.j5ik2o.akka.persistence.s3.base.config.PluginConfig
 import com.github.j5ik2o.akka.persistence.s3.base.exception.PluginException
-import com.github.j5ik2o.akka.persistence.s3.base.model.{ Context, PersistenceId }
+import com.github.j5ik2o.akka.persistence.s3.base.model.Context
 
 import scala.annotation.unused
 import scala.collection.immutable._
-import scala.util.{ Failure, Success }
+import scala.util.{Failure, Success}
 
 trait MetricsReporter {
 
@@ -66,13 +65,6 @@ trait MetricsReporter {
 }
 
 object MetricsReporter {
-
-  case class DefaultContext(id: UUID, persistenceId: PersistenceId, data: Option[Any]) extends Context {
-    override def withData(value: Option[Any]): Context = copy(data = value)
-  }
-
-  def newContext(id: UUID, persistenceId: PersistenceId, data: Option[Any] = scala.None): Context =
-    DefaultContext(id, persistenceId, data)
 
   class None(@unused pluginConfig: PluginConfig) extends MetricsReporter {
     override def beforeJournalAsyncWriteMessages(context: Context): Context = { context }
