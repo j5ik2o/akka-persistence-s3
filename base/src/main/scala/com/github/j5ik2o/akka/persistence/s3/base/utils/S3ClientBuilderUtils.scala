@@ -1,12 +1,14 @@
 package com.github.j5ik2o.akka.persistence.s3.base.utils
 
 import akka.actor.DynamicAccess
-
 import java.net.URI
+
 import com.github.j5ik2o.akka.persistence.s3.base.config.{ PluginConfig, S3ClientOptionsConfig }
 import com.github.j5ik2o.akka.persistence.s3.base.provider.AwsCredentialsProviderProvider
 import software.amazon.awssdk.auth.credentials.{ AwsBasicCredentials, StaticCredentialsProvider }
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
+import software.amazon.awssdk.metrics.publishers.cloudwatch.CloudWatchMetricPublisher
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.{ S3AsyncClient, S3AsyncClientBuilder, S3Configuration }
 
@@ -32,6 +34,16 @@ object S3ClientBuilderUtils {
     clientConfig.endpoint.foreach { ep => builder = builder.endpointOverride(URI.create(ep)) }
     clientConfig.region.foreach { r => builder = builder.region(Region.of(r)) }
     clientConfig.s3OptionConfig.foreach { o => builder = builder.serviceConfiguration(getS3Configuration(o)) }
+
+    // FIXME Should be configurable.
+    val metricPublisher = CloudWatchMetricPublisher.builder().build()
+    builder = builder.overrideConfiguration(
+      ClientOverrideConfiguration
+        .builder()
+        .addMetricPublisher(metricPublisher)
+        .build()
+    )
+
     builder
   }
 

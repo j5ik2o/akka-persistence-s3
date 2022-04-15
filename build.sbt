@@ -92,6 +92,7 @@ lazy val base = (project in file("base"))
     libraryDependencies ++= Seq(
       slf4j.api,
       software.awssdk.s3,
+      software.awssdk.cloudWatchMetricPublisher,
       logback.classic % Test
     ),
     libraryDependencies ++= {

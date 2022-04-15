@@ -32,7 +32,8 @@ object Dependencies {
   object software {
 
     object awssdk {
-      val s3 = "software.amazon.awssdk" % "s3" % "2.17.171"
+      val s3                        = "software.amazon.awssdk" % "s3"                          % "2.17.171"
+      val cloudWatchMetricPublisher = "software.amazon.awssdk" % "cloudwatch-metric-publisher" % "2.17.171"
     }
 
   }
