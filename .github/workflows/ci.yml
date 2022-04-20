@@ -30,7 +30,7 @@ jobs:
       JAVA_OPTS: -Xms2048M -Xmx2048M -Xss6M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
       JVM_OPTS:  -Xms2048M -Xmx2048M -Xss6M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
     steps:
-      - uses: actions/checkout@v2.4.0
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - uses: olafurpg/setup-scala@v13
@@ -54,7 +54,7 @@ jobs:
       AWS_REGION: ap-northeast-1
       TEST_TIME_FACTOR: 3
     steps:
-      - uses: actions/checkout@v2.4.0
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - uses: olafurpg/setup-scala@v13
@@ -67,7 +67,7 @@ jobs:
         run: "${GITHUB_WORKSPACE}/.github/clean-up.sh"
   automerge:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.actor == 'j5ik2o-bot[bot]'
     needs: test
     steps:
       - name: Generate token
@@ -77,7 +77,7 @@ jobs:
           app_id: 111016
           private_key: ${{ secrets.BOT_PRIVATE_KEY }}
       - name: automerge
-        uses: pascalgn/automerge-action@v0.14.3
+        uses: pascalgn/automerge-action@v0.15.2
         env:
           GITHUB_TOKEN: "${{ steps.generate_token.outputs.token }}"
           MERGE_LABELS: ""

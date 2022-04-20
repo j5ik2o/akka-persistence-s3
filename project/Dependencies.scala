@@ -5,7 +5,7 @@ object Dependencies {
   object Versions {
     val scala212Version  = "2.12.10"
     val scala213Version  = "2.13.8"
-    val scala3Version    = "3.1.1"
+    val scala3Version    = "3.1.2"
     val akkaVersion      = "2.6.19"
     val scalaTestVersion = "3.2.11"
   }
@@ -21,7 +21,7 @@ object Dependencies {
   }
 
   object iheart {
-    val ficus = "com.iheart" %% "ficus" % "1.5.0"
+    val ficus = "com.iheart" %% "ficus" % "1.5.2"
   }
 
   object slf4j {
@@ -32,7 +32,7 @@ object Dependencies {
   object software {
 
     object awssdk {
-      val s3 = "software.amazon.awssdk" % "s3" % "2.17.133"
+      val s3 = "software.amazon.awssdk" % "s3" % "2.17.173"
     }
 
   }
@@ -50,12 +50,12 @@ object Dependencies {
   }
 
   object scala {
-    val collectionCompat: ModuleID         = "org.scala-lang.modules" %% "scala-collection-compat" % "2.5.0"
+    val collectionCompat: ModuleID         = "org.scala-lang.modules" %% "scala-collection-compat" % "2.7.0"
     def reflect(version: String): ModuleID = "org.scala-lang"          % "scala-reflect"           % version
   }
 
   object logback {
-    val classic: ModuleID = "ch.qos.logback" % "logback-classic" % "1.2.5"
+    val classic: ModuleID = "ch.qos.logback" % "logback-classic" % "1.2.11"
   }
 
   object typesafe {

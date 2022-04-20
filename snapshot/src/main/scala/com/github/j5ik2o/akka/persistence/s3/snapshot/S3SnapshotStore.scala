@@ -6,8 +6,9 @@ import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionC
 import akka.serialization.{ Serialization, SerializationExtension }
 import com.github.j5ik2o.akka.persistence.s3.base.config.S3ClientConfig
 import com.github.j5ik2o.akka.persistence.s3.base.metrics.{ MetricsReporter, MetricsReporterProvider }
-import com.github.j5ik2o.akka.persistence.s3.base.model.{ PersistenceId, SequenceNumber }
+import com.github.j5ik2o.akka.persistence.s3.base.model.{ Context, PersistenceId, SequenceNumber }
 import com.github.j5ik2o.akka.persistence.s3.base.resolver.PathPrefixResolver
+import com.github.j5ik2o.akka.persistence.s3.base.trace.{ TraceReporter, TraceReporterProvider }
 import com.github.j5ik2o.akka.persistence.s3.base.utils.{ HttpClientBuilderUtils, S3ClientBuilderUtils }
 import com.github.j5ik2o.akka.persistence.s3.config.SnapshotPluginConfig
 import com.github.j5ik2o.akka.persistence.s3.resolver.{ SnapshotBucketNameResolver, SnapshotMetadataKeyConverter }
@@ -46,6 +47,11 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
   protected val metricsReporter: Option[MetricsReporter] = {
     val metricsReporterProvider = MetricsReporterProvider.create(dynamicAccess, pluginConfig)
     metricsReporterProvider.create
+  }
+
+  protected val traceReporter: Option[TraceReporter] = {
+    val traceReporterProvider = TraceReporterProvider.create(dynamicAccess, pluginConfig)
+    traceReporterProvider.create
   }
 
   protected val bucketNameResolver: SnapshotBucketNameResolver = {
@@ -91,7 +97,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
 
   private val serialization: Serialization = SerializationExtension(system)
 
-  private val serializer = new ByteArraySnapshotSerializer(serialization, metricsReporter)
+  private val serializer = new ByteArraySnapshotSerializer(serialization, metricsReporter, traceReporter)
 
   override def loadAsync(
       persistenceId: String,
@@ -100,27 +106,30 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     implicit val ec: ExecutionContext = system.dispatcher
 
     val pid        = PersistenceId(persistenceId)
-    val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
+    val context    = Context.newContext(UUID.randomUUID(), pid)
     val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreLoadAsync(context))
-    val future = snapshotMetadatas(persistenceId, criteria)
+    def future = snapshotMetadatas(persistenceId, criteria)
       .map(_.sorted.takeRight(maxLoadAttempts))
       .flatMap(load)
-    future.onComplete {
+
+    val traced = traceReporter.fold(future)(_.traceSnapshotStoreLoadAsync(context)(future))
+
+    traced.onComplete {
       case Success(_) =>
         metricsReporter.foreach(_.afterSnapshotStoreLoadAsync(newContext))
       case Failure(ex) =>
         metricsReporter.foreach(_.errorSnapshotStoreLoadAsync(newContext, ex))
     }
-    future
+    traced
   }
 
   override def saveAsync(snapshotMetadata: SnapshotMetadata, snapshot: Any): Future[Unit] = {
     implicit val ec: ExecutionContext = system.dispatcher
     val pid                           = PersistenceId(snapshotMetadata.persistenceId)
-    val context                       = MetricsReporter.newContext(UUID.randomUUID(), pid)
+    val context                       = Context.newContext(UUID.randomUUID(), pid)
     val newContext                    = metricsReporter.fold(context)(_.beforeSnapshotStoreSaveAsync(context))
 
-    val future = for {
+    def future = for {
       serialized <- serializer.serialize(snapshotMetadata, snapshot)
       putObjectRequest = PutObjectRequest
         .builder()
@@ -144,14 +153,16 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
         }
     } yield result
 
-    future.onComplete {
+    val traced = traceReporter.fold(future)(_.traceSnapshotStoreSaveAsync(context)(future))
+
+    traced.onComplete {
       case Success(_) =>
         metricsReporter.foreach(_.afterSnapshotStoreSaveAsync(newContext))
       case Failure(ex) =>
         metricsReporter.foreach(_.errorSnapshotStoreSaveAsync(newContext, ex))
     }
 
-    future
+    traced
   }
 
   override def deleteAsync(snapshotMetadata: SnapshotMetadata): Future[Unit] = {
@@ -169,7 +180,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       )
     else {
       val pid        = PersistenceId(snapshotMetadata.persistenceId)
-      val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
+      val context    = Context.newContext(UUID.randomUUID(), pid)
       val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreDeleteAsync(context))
       val request = DeleteObjectRequest
         .builder()
@@ -177,7 +188,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
         .key(convertToKey(snapshotMetadata))
         .build()
 
-      val future = s3AsyncClient.deleteObject(request).toScala.flatMap { response =>
+      def future = s3AsyncClient.deleteObject(request).toScala.flatMap { response =>
         val sdkHttpResponse = response.sdkHttpResponse
         if (response.sdkHttpResponse().isSuccessful)
           Future.successful(())
@@ -188,13 +199,16 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
             )
           )
       }
-      future.onComplete {
+
+      val traced = traceReporter.fold(future)(_.traceSnapshotStoreDeleteAsync(context)(future))
+
+      traced.onComplete {
         case Success(_) =>
           metricsReporter.foreach(_.afterSnapshotStoreDeleteAsync(newContext))
         case Failure(ex) =>
           metricsReporter.foreach(_.errorSnapshotStoreDeleteAsync(newContext, ex))
       }
-      future
+      traced
     }
   }
 
@@ -205,17 +219,20 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     implicit val ec: ExecutionContext = system.dispatcher
 
     val pid        = PersistenceId(persistenceId)
-    val context    = MetricsReporter.newContext(UUID.randomUUID(), pid)
+    val context    = Context.newContext(UUID.randomUUID(), pid)
     val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreDeleteWithCriteriaAsync(context))
     val metadatas  = snapshotMetadatas(persistenceId, criteria)
-    val future     = metadatas.flatMap(list => Future.sequence(list.map(deleteAsync))).map(_ => ())
-    future.onComplete {
+    def future     = metadatas.flatMap(list => Future.sequence(list.map(deleteAsync))).map(_ => ())
+
+    val traced = traceReporter.fold(future)(_.traceSnapshotStoreDeleteWithCriteriaAsync(context)(future))
+
+    traced.onComplete {
       case Success(_) =>
         metricsReporter.foreach(_.afterSnapshotStoreDeleteWithCriteriaAsync(newContext))
       case Failure(ex) =>
         metricsReporter.foreach(_.errorSnapshotStoreDeleteWithCriteriaAsync(newContext, ex))
     }
-    future
+    traced
   }
 
   private def load(
