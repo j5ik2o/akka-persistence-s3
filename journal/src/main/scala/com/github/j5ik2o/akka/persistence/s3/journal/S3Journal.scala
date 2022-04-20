@@ -129,8 +129,8 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
 
     implicit val ec: ExecutionContext = system.dispatcher
 
-    val serializedFutures = serializer.serialize(atomicWrites)
-    val rowsToWriteFutures = serializedFutures.map { serializeFuture =>
+    def serializedFutures = serializer.serialize(atomicWrites)
+    def rowsToWriteFutures = serializedFutures.map { serializeFuture =>
       serializeFuture.recoverWith { case _ =>
         Future.successful(Seq.empty)
       }
@@ -310,9 +310,9 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
       }
     }
 
-    val fromSeqNr = Math.max(1, fromSequenceNr)
+    lazy val fromSeqNr = Math.max(1, fromSequenceNr)
 
-    val source =
+    def source =
       if (max == 0 || fromSeqNr > toSequenceNr)
         Source.empty
       else {
@@ -372,7 +372,7 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
     val context    = Context.newContext(UUID.randomUUID(), pid)
     val newContext = metricsReporter.fold(context)(_.beforeJournalAsyncReadHighestSequenceNr(context))
 
-    val fromSeqNr = Math.max(1, fromSequenceNr)
+    lazy val fromSeqNr = Math.max(1, fromSequenceNr)
     def future = listObjectsSource(pid, listObjectsBatchSize)
       .log("list-objects")
       .mapConcat { res =>
