@@ -97,7 +97,8 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
 
   private val serialization: Serialization = SerializationExtension(system)
 
-  private val serializer = new ByteArraySnapshotSerializer(serialization, metricsReporter, traceReporter)
+  private val serializer: ByteArraySnapshotSerializer =
+    new ByteArraySnapshotSerializer(serialization, metricsReporter, traceReporter)
 
   override def loadAsync(
       persistenceId: String,
@@ -108,6 +109,7 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     val pid        = PersistenceId(persistenceId)
     val context    = Context.newContext(UUID.randomUUID(), pid)
     val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreLoadAsync(context))
+
     def future = snapshotMetadatas(persistenceId, criteria)
       .map(_.sorted.takeRight(maxLoadAttempts))
       .flatMap(load)
@@ -182,22 +184,24 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
       val pid        = PersistenceId(snapshotMetadata.persistenceId)
       val context    = Context.newContext(UUID.randomUUID(), pid)
       val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreDeleteAsync(context))
-      val request = DeleteObjectRequest
-        .builder()
-        .bucket(resolveBucketName(pid))
-        .key(convertToKey(snapshotMetadata))
-        .build()
 
-      def future = s3AsyncClient.deleteObject(request).toScala.flatMap { response =>
-        val sdkHttpResponse = response.sdkHttpResponse
-        if (response.sdkHttpResponse().isSuccessful)
-          Future.successful(())
-        else
-          Future.failed(
-            new S3SnapshotException(
-              s"Failed to DeleteObjectRequest: statusCode = ${sdkHttpResponse.statusCode()}"
+      def future = {
+        val request = DeleteObjectRequest
+          .builder()
+          .bucket(resolveBucketName(pid))
+          .key(convertToKey(snapshotMetadata))
+          .build()
+        s3AsyncClient.deleteObject(request).toScala.flatMap { response =>
+          val sdkHttpResponse = response.sdkHttpResponse
+          if (response.sdkHttpResponse().isSuccessful)
+            Future.successful(())
+          else
+            Future.failed(
+              new S3SnapshotException(
+                s"Failed to DeleteObjectRequest: statusCode = ${sdkHttpResponse.statusCode()}"
+              )
             )
-          )
+        }
       }
 
       val traced = traceReporter.fold(future)(_.traceSnapshotStoreDeleteAsync(context)(future))
@@ -221,8 +225,11 @@ class S3SnapshotStore(config: Config) extends SnapshotStore {
     val pid        = PersistenceId(persistenceId)
     val context    = Context.newContext(UUID.randomUUID(), pid)
     val newContext = metricsReporter.fold(context)(_.beforeSnapshotStoreDeleteWithCriteriaAsync(context))
-    val metadatas  = snapshotMetadatas(persistenceId, criteria)
-    def future     = metadatas.flatMap(list => Future.sequence(list.map(deleteAsync))).map(_ => ())
+
+    def future = {
+      val metadatas = snapshotMetadatas(persistenceId, criteria)
+      metadatas.flatMap(list => Future.sequence(list.map(deleteAsync))).map(_ => ())
+    }
 
     val traced = traceReporter.fold(future)(_.traceSnapshotStoreDeleteWithCriteriaAsync(context)(future))
 
