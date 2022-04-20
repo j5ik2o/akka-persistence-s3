@@ -22,8 +22,8 @@ def crossScalacOptions(scalaVersion: String): Seq[String] =
 
 val coreSettings = Seq(
   organization := "com.github.j5ik2o",
-  homepage     := Some(url("https://github.com/j5ik2o/akka-persistence-s3")),
-  licenses     := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+  homepage := Some(url("https://github.com/j5ik2o/akka-persistence-s3")),
+  licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
   developers := List(
     Developer(
       id = "j5ik2o",
@@ -48,10 +48,10 @@ val coreSettings = Seq(
     "Seasar Repository" at "https://maven.seasar.org/maven2/",
     "jitpack" at "https://jitpack.io"
   ),
-  semanticdbEnabled        := true,
-  semanticdbVersion        := scalafixSemanticdb.revision,
-  Test / fork              := true,
-  Test / publishArtifact   := false,
+  semanticdbEnabled := true,
+  semanticdbVersion := scalafixSemanticdb.revision,
+  Test / fork := true,
+  Test / publishArtifact := false,
   Test / parallelExecution := false,
   Compile / doc / sources := {
     val old = (Compile / doc / sources).value
@@ -148,7 +148,7 @@ lazy val journal = (project in file("journal"))
 lazy val benchmark = (project in file("benchmark"))
   .settings(coreSettings)
   .settings(
-    name           := "akka-persistence-dynamodb-benchmark",
+    name := "akka-persistence-dynamodb-benchmark",
     publish / skip := true,
     libraryDependencies ++= Seq(
       logback.classic,
@@ -166,7 +166,7 @@ lazy val benchmark = (project in file("benchmark"))
 lazy val root = (project in file("."))
   .settings(coreSettings)
   .settings(
-    name           := "akka-persistence-s3-root",
+    name := "akka-persistence-s3-root",
     publish / skip := true
   )
   .aggregate(base, journal, snapshot)

@@ -112,7 +112,7 @@ class ByteArrayJournalSerializer(
     val newContext = metricsReporter.fold(context)(_.beforeJournalDeserializeJournal(context))
 
     def future = for {
-      serializer   <- serializerAsync
+      serializer <- serializerAsync
       deserialized <- fromBinaryAsync(serializer, journalRow.message)
     } yield (deserialized, decodeTags(journalRow.tags, separator), journalRow.ordering)
 
