@@ -264,7 +264,7 @@ class S3Journal(config: Config) extends AsyncWriteJournal {
       }
       .mapAsync(1) { case (obj, _, seqNr) =>
         for {
-          _   <- copyObject(pid, obj, seqNr)
+          _ <- copyObject(pid, obj, seqNr)
           res <- deleteObject(pid, obj)
         } yield res
       }
