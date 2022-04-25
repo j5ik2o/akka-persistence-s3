@@ -7,7 +7,7 @@ object Dependencies {
     val scala213Version  = "2.13.8"
     val scala3Version    = "3.1.2"
     val akkaVersion      = "2.6.19"
-    val scalaTestVersion = "3.2.11"
+    val scalaTestVersion = "3.2.12"
   }
 
   object akka {
