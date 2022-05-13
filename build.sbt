@@ -6,12 +6,12 @@ ThisBuild / scalafixScalaBinaryVersion := CrossVersion.binaryScalaVersion(scalaV
 
 def crossScalacOptions(scalaVersion: String): Seq[String] =
   CrossVersion.partialVersion(scalaVersion) match {
-    case Some((3L, _)) =>
+    case Some(3L, _) =>
       Seq(
         "-source:3.0-migration",
         "-Xignore-scala2-macros"
       )
-    case Some((2L, scalaMajor)) if scalaMajor >= 12 =>
+    case Some(2L, scalaMajor) if scalaMajor >= 12 =>
       Seq(
         "-Ydelambdafy:method",
         "-target:jvm-1.8",
@@ -34,14 +34,14 @@ val coreSettings = Seq(
   ),
   scalaVersion := scala213Version,
   crossScalaVersions ++= Seq(scala212Version, scala213Version, scala3Version),
-  scalacOptions ++= (Seq(
+  scalacOptions ++= Seq(
     "-unchecked",
     "-feature",
     "-deprecation",
     "-encoding",
     "UTF-8",
     "-language:_"
-  ) ++ crossScalacOptions(scalaVersion.value)),
+  ) ++ crossScalacOptions(scalaVersion.value),
   resolvers ++= Seq(
     "Sonatype OSS Snapshot Repository" at "https://oss.sonatype.org/content/repositories/snapshots/",
     "Sonatype OSS Release Repository" at "https://oss.sonatype.org/content/repositories/releases/",
@@ -78,9 +78,9 @@ lazy val test = (project in file("test"))
     ).map(_.cross(CrossVersion.for3Use2_13)),
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((3L, _))                              => Seq.empty
-        case Some((2L, scalaMajor)) if scalaMajor == 13 => Seq.empty
-        case Some((2L, scalaMajor)) if scalaMajor == 12 => Seq(scala.collectionCompat)
+        case Some(3L, _)                              => Seq.empty
+        case Some(2L, scalaMajor) if scalaMajor == 13 => Seq.empty
+        case Some(2L, scalaMajor) if scalaMajor == 12 => Seq(scala.collectionCompat)
       }
     }
   )
@@ -96,7 +96,7 @@ lazy val base = (project in file("base"))
     ),
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2L, _)) =>
+        case Some(2L, _) =>
           Seq(scala.reflect(scalaVersion.value))
         case _ =>
           Seq.empty
@@ -110,11 +110,11 @@ lazy val base = (project in file("base"))
     ).map(_.cross(CrossVersion.for3Use2_13)),
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((3L, _)) =>
+        case Some(3L, _) =>
           Seq.empty
-        case Some((2L, scalaMajor)) if scalaMajor == 13 =>
+        case Some(2L, scalaMajor) if scalaMajor == 13 =>
           Seq.empty
-        case Some((2L, scalaMajor)) if scalaMajor == 12 =>
+        case Some(2L, scalaMajor) if scalaMajor == 12 =>
           Seq(scala.collectionCompat)
       }
     }
