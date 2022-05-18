@@ -11,7 +11,7 @@ object TypedCounter {
   sealed trait Command
   trait Reply
   case class Increment(n: Int, replyTo: ActorRef[IncrementReply]) extends Command
-  case class IncrementReply()                                     extends Reply
+  case class IncrementReply() extends Reply
 
   def apply(id: UUID): Behavior[Command] =
     Behaviors.setup[Command] { context =>
@@ -25,6 +25,6 @@ object TypedCounter {
           state + event
         }
       )
-    //.withRetention(RetentionCriteria.snapshotEvery(100, 1))
+    // .withRetention(RetentionCriteria.snapshotEvery(100, 1))
     }
 }
