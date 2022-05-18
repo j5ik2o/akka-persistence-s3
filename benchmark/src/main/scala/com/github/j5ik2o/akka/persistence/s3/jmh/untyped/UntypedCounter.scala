@@ -9,7 +9,7 @@ object UntypedCounter {
   sealed trait Command
   trait Reply
   case class Increment(n: Int) extends Command
-  case class IncrementReply()  extends Reply
+  case class IncrementReply() extends Reply
   sealed trait Event
   case class Incremented(n: Int) extends Event
 }
