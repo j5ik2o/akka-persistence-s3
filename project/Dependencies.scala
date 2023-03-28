@@ -55,7 +55,7 @@ object Dependencies {
   }
 
   object logback {
-    val classic: ModuleID = "ch.qos.logback" % "logback-classic" % "1.4.6"
+    val classic: ModuleID = "ch.qos.logback" % "logback-classic" % "1.2.12"
   }
 
   object typesafe {
